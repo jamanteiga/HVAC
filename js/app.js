@@ -20,14 +20,14 @@ function vDuct(){
  <td>${f(c.A,4)}</td><td>${f(c.Dh*1000,0)}</td><td>${f(c.V)}</td><td>${f(c.Re,0)}</td><td>${f(c.f,4)}</td><td>${f(c.dp,1)}</td><td class="${c.tot!=null&&c.tot===mx&&mx>0?"o":""}">${f(c.tot,1)}</td>
  <td class="${c.dB==null?"":c.dB<50?"g":"r"}">${f(c.dB,1)}</td><td><button class="btn sec" data-fit="${i}" title="Dimensionar esta línea">Dimensionar</button> <button class="btn sec" data-ins="${i}" title="Insertar línea debajo">+</button> <button class="btn sec" data-del="${i}" title="Eliminar línea">×</button></td></tr>`}).join("");
  return `<div class="card"><h2>Dimensionamiento de conductos</h2><div class="bar"><button class="btn" data-add>Añadir línea</button><button class="btn sec" data-fitall>Dimensionar todo (${METHODS[S.d.metodo][0]})</button></div>
- <div class="wrap"><table><thead><tr><th>#</th><th>N1</th><th>N2</th><th>N3</th><th>ID tramo</th><th>ID padre</th><th>Forma</th><th class="l">Elemento</th><th>K</th><th>Q m³/s</th><th>Alto mm</th><th>Ancho mm</th><th>Ø mm</th><th>Long. mm</th><th class="l">Material</th><th>A m²</th><th>Dh mm</th><th>V m/s</th><th>Re</th><th>f</th><th>ΔP Pa</th><th>ΔP total Pa</th><th>Ruido dB</th><th></th></tr></thead><tbody>${body}</tbody></table></div>
+ <div class="wrap"><table class="cards"><thead><tr><th>#</th><th>N1</th><th>N2</th><th>N3</th><th>ID tramo</th><th>ID padre</th><th>Forma</th><th class="l">Elemento</th><th>K</th><th>Q m³/s</th><th>Alto mm</th><th>Ancho mm</th><th>Ø mm</th><th>Long. mm</th><th class="l">Material</th><th>A m²</th><th>Dh mm</th><th>V m/s</th><th>Re</th><th>f</th><th>ΔP Pa</th><th>ΔP total Pa</th><th>Ruido dB</th><th></th></tr></thead><tbody>${body}</tbody></table></div>
  <p class="note">Rugosidad según material y f por Colebrook-White iterativo. Fila “Conducto”: ΔP = f·(L/Dh)·ρV²/2; resto de elementos: ΔP = K·ρV²/2. Naranja = mayor pérdida acumulada. Ruido: verde &lt; 50 dB, rojo ≥ 50 dB. Para oval, Dh = 4A/P (elipse).</p></div>`;
 }
 function vRep(){
  const R=calcAll();
  return `<div class="card"><h2>Resumen de conductos</h2><div class="bar"><button class="btn" onclick="window.print()">Imprimir / guardar PDF</button><button class="btn sec" id="cpy">Copiar tabla para Excel</button></div>
  <p><b>${esc(S.d.nombre||"Sin nombre")}</b> · ${esc(S.d.codigo)} · ${esc(S.d.cliente)} · ${esc(S.d.tipo)} · ${esc(S.d.ing)} · ${esc(S.d.fecha)}</p>
- <div class="wrap"><table><thead><tr><th>ID tramo</th><th class="l">Elemento</th><th>Forma</th><th>Q m³/s</th><th>V m/s</th><th>Dh mm</th><th>ΔP Pa</th><th>ΔP total Pa</th><th>Ruido dB</th></tr></thead><tbody>
+ <div class="wrap"><table class="cards"><thead><tr><th>ID tramo</th><th class="l">Elemento</th><th>Forma</th><th>Q m³/s</th><th>V m/s</th><th>Dh mm</th><th>ΔP Pa</th><th>ΔP total Pa</th><th>Ruido dB</th></tr></thead><tbody>
  ${S.rows.map((r,i)=>{const c=R[i];return `<tr><td>${c.id}</td><td class="l">${esc(r.acc)}</td><td>${r.forma}</td><td>${f(r.q,3)}</td><td>${f(c.V)}</td><td>${f(c.Dh*1000,0)}</td><td>${f(c.dp,1)}</td><td>${f(c.tot,1)}</td><td>${f(c.dB,1)}</td></tr>`}).join("")}</tbody></table></div></div>`;
 }
 const DB="hvac:projects";
@@ -36,16 +36,19 @@ function saveDB(o){try{localStorage.setItem(DB,JSON.stringify(o));return true}ca
 function vProy(){
  const db=loadDB(),ks=Object.keys(db);
  return `<div class="card"><h2>Proyectos guardados</h2><div class="bar"><button class="btn" id="save">Guardar proyecto actual</button></div>
- ${ks.length?`<div class="wrap"><table><thead><tr><th class="l">Proyecto</th><th>Líneas</th><th></th></tr></thead><tbody>${ks.map(k=>`<tr><td class="l">${esc(k)}</td><td>${db[k].rows.length}</td><td><button class="btn sec" data-load="${esc(k)}">Abrir</button> <button class="btn sec" data-copy="${esc(k)}">Copiar a nuevo</button> <button class="btn sec" data-rm="${esc(k)}">Eliminar</button></td></tr>`).join("")}</tbody></table></div>`:`<p class="note">Aún no hay proyectos. Rellena los datos y pulsa “Guardar proyecto actual”.</p>`}
+ ${ks.length?`<div class="wrap"><table class="cards"><thead><tr><th class="l">Proyecto</th><th>Líneas</th><th></th></tr></thead><tbody>${ks.map(k=>`<tr><td class="l">${esc(k)}</td><td>${db[k].rows.length}</td><td><button class="btn sec" data-load="${esc(k)}">Abrir</button> <button class="btn sec" data-copy="${esc(k)}">Copiar a nuevo</button> <button class="btn sec" data-rm="${esc(k)}">Eliminar</button></td></tr>`).join("")}</tbody></table></div>`:`<p class="note">Aún no hay proyectos. Rellena los datos y pulsa “Guardar proyecto actual”.</p>`}
  <p class="note">Los proyectos se guardan en este navegador. La capa de datos (loadDB/saveDB) está aislada para sustituirla por Firebase al desplegar fuera de esta vista.</p></div>`;
 }
 function summary(){
  const R=calcAll(),tot=R.map(x=>x.tot||0),Vm=Math.max(0,...R.map(x=>x.V||0)),Q=num(S.rows[0]?.q);
  $("#sum").innerHTML=[["Proyecto",S.d.nombre||"—"],["Tipo",S.d.tipo],["T int / ext",S.d.tint+" / "+S.d.text+" °C"],["Método",METHODS[S.d.metodo][0]],["Líneas",S.rows.length],["V máx.",f(Vm)+" m/s"],["ΔP máx. acumulada",f(Math.max(0,...tot),1)+" Pa"],["Líneas > 50 dB",R.filter(x=>x.dB>=50).length]].map(([a,b])=>`<div class="row"><span>${a}</span><b>${esc(b)}</b></div>`).join("");
 }
+function labelCells(){ // etiquetas por celda para la vista en tarjetas (móvil)
+ document.querySelectorAll("table.cards").forEach(t=>{const hs=[...t.querySelectorAll("thead th")].map(h=>h.textContent.trim());
+  t.querySelectorAll("tbody tr").forEach(tr=>[...tr.children].forEach((td,i)=>td.setAttribute("data-label",hs[i]||"")))})}
 function render(){
- $("#nav").innerHTML=TABS.map(([k,l])=>`<button class="${k===tab?"on":""}" data-tab="${k}">${l}</button>`).join("");
- $("#view").innerHTML={datos:vDatos,duct:vDuct,rep:vRep,proy:vProy}[tab]();summary();
+ $("#nav").innerHTML=TABS.map(([k,l])=>`<button class="${k===tab?"on":""}" data-tab="${k}" title="${l.slice(4)}">${ICONS[k]}<span>${l}</span></button>`).join("");
+ $("#view").innerHTML={datos:vDatos,duct:vDuct,rep:vRep,proy:vProy}[tab]();labelCells();summary();
 }
 /* ---- Eventos ---- */
 document.addEventListener("click",e=>{
@@ -73,3 +76,4 @@ document.addEventListener("change",e=>{
 function setTheme(t){document.documentElement.dataset.theme=t;try{localStorage.setItem("hvac:theme",t)}catch(e){}}
 (function(){const sel=$("#theme");sel.value=document.documentElement.dataset.theme||"claro";if(!sel.value)sel.value="claro";sel.addEventListener("change",()=>setTheme(sel.value))})();
 render();
+if("serviceWorker" in navigator&&location.protocol.startsWith("http"))navigator.serviceWorker.register("sw.js").catch(()=>{});

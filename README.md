@@ -28,3 +28,12 @@ Abre `index.html` en el navegador.
 ## Proyectos guardados
 
 Se guardan en el navegador (localStorage). Las funciones `loadDB` y `saveDB` en `js/app.js` están aisladas para sustituirlas por Firebase.
+
+## Móvil y tablet
+
+Funciona en iPad, iPhone y Android desde el navegador. Se puede instalar como app:
+
+- iPhone/iPad (Safari): Compartir → "Añadir a pantalla de inicio".
+- Android (Chrome): menú ⋮ → "Instalar aplicación" o "Añadir a pantalla de inicio".
+
+En pantallas estrechas las tablas se muestran como tarjetas. Tras instalarla funciona sin conexión.
