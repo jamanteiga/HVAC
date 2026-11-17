@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
-import { Card, Field, Input, Text, Title3 } from '@fluentui/react-components';
-import { weight, WShape } from '../engine/weights';
+import { Button, Card, Field, Input, Text, Title3 } from '@fluentui/react-components';
+import { weight, perimeter, WShape } from '../engine/weights';
 import { parseNum } from './DataGrid';
 
 // Colores de la hoja: verde = dato manual, azul = constante, amarillo = calculado.
@@ -18,8 +18,9 @@ const FIELDS: Record<WShape, { k: K; label: string; unit: string }[]> = {
 // Fila de la tabla: definida fuera de Calc para que no se vuelva a montar en cada pulsación (si no, el campo pierde el foco).
 const Row = ({ label, color, children, unit, bold }: any) => (<tr style={{ background: color, fontWeight: bold ? 700 : 400 }}><td style={cell}>{label}</td><td style={{ ...cell, textAlign: 'right', width: 120 }}>{children}</td><td style={{ ...cell, textAlign: 'center', width: 70 }}>{unit}</td></tr>);
 
-function Calc({ shape, rho }: { shape: WShape; rho: string }) {
+function Calc({ shape, rho, lmax, pmax }: { shape: WShape; rho: string; lmax: number; pmax: number }) {
   const [v, setV] = useState<Record<string, string>>({ espesor: '3', extra: '0' });
+  const [info, setInfo] = useState('');
   const n = (k: K) => parseNum(v[k]) ?? 0;
   const R = useMemo(() => weight({ shape, alto: n('alto'), ancho: n('ancho'), diam: n('diam'), espesor: n('espesor'), longitud: n('longitud'), densidad: parseNum(rho) ?? 7850, extra: n('extra') }), [v, shape, rho]); // eslint-disable-line
   return (
@@ -36,21 +37,41 @@ function Calc({ shape, rho }: { shape: WShape; rho: string }) {
           <Row label="Peso total" color={C.calc} unit="kg" bold>{fmt(R.total)}</Row>
         </tbody>
       </table>
+      <div style={{ padding: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
+        {R.total > pmax + 1e-9 && <Text size={200} style={{ color: 'var(--over)' }}>El peso total ({fmt(R.total)} kg) supera el máximo de {fmt(pmax, 0)} kg.</Text>}
+        {n('longitud') > lmax + 1e-9 && <Text size={200} style={{ color: 'var(--over)' }}>La longitud supera el máximo de {fmt(lmax, 0)} mm.</Text>}
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <Button appearance="primary" onClick={() => { setV(s => ({ ...s, longitud: String(lmax) })); setInfo(`Longitud fijada en ${fmt(lmax, 0)} mm (máxima).`); }}>Calcular peso (L = {fmt(lmax, 0)} mm)</Button>
+          <Button onClick={() => {
+            const k = perimeter({ shape, alto: n('alto'), ancho: n('ancho'), diam: n('diam') }) * n('espesor') * (parseNum(rho) ?? 7850) * 1e-9; // kg por mm de longitud
+            if (!(k > 0)) { setInfo('Introduce las medidas y el espesor.'); return; }
+            const free = pmax - n('extra');
+            if (free <= 0) { setInfo(`El peso extra (${fmt(n('extra'))} kg) alcanza o supera el máximo de ${fmt(pmax, 0)} kg.`); return; }
+            const raw = free / k, L = Math.floor(Math.min(raw, lmax));
+            setV(s => ({ ...s, longitud: String(L) }));
+            setInfo(raw > lmax ? `Para ${fmt(pmax, 0)} kg saldrían ${fmt(raw, 0)} mm; se limita a ${fmt(lmax, 0)} mm.` : `Longitud para ${fmt(pmax, 0)} kg totales (con extra): ${fmt(L, 0)} mm.`);
+          }}>Calcular longitud (peso total {fmt(pmax, 0)} kg)</Button>
+        </div>
+        {info && <Text size={200} style={{ color: 'var(--subtle)' }}>{info}</Text>}
+      </div>
     </Card>
   );
 }
 
 export function Module6() {
-  const [rho, setRho] = useState('7850');
+  const [rho, setRho] = useState('7850'); const [lmaxS, setLmaxS] = useState('1500'); const [pmaxS, setPmaxS] = useState('80');
+  const lmax = parseNum(lmaxS) ?? 1500, pmax = parseNum(pmaxS) ?? 80;
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12, height: '100%', overflow: 'auto' }}>
       <Card><Title3>Peso de tramos de conducto</Title3>
         <Text size={200} style={{ color: 'var(--subtle)' }}>Peso = perímetro × longitud × espesor × densidad (perímetro, área y volumen se calculan internamente). Verde: dato manual · azul: constante · amarillo: calculado. Dimensiones en mm; decimales con punto o coma.</Text>
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
           <Field label="Densidad (kg/m³)"><Input value={rho} onChange={(_, x) => setRho(x.value)} /></Field>
+          <Field label="Longitud máx. de conducto (mm)"><Input value={lmaxS} onChange={(_, x) => setLmaxS(x.value)} /></Field>
+          <Field label="Peso máx. del tramo (kg)"><Input value={pmaxS} onChange={(_, x) => setPmaxS(x.value)} /></Field>
 </div></Card>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(330px,1fr))', gap: 16, alignItems: 'start' }}>
-        {(['Rectangular', 'Circular', 'Oval'] as WShape[]).map(s => <Calc key={s} shape={s} rho={rho} />)}
+        {(['Rectangular', 'Circular', 'Oval'] as WShape[]).map(s => <Calc key={s} shape={s} rho={rho} lmax={lmax} pmax={pmax} />)}
       </div>
     </div>
   );

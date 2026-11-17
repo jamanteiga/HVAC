@@ -137,3 +137,9 @@ it('local NBQ aumenta ligeramente ρ y ΔP', () => {
   const a = calcLosses([row], d, DEFAULT_ACCESSORIES, DEFAULT_MATERIALS).rows[0].dp!, b = calcLosses([{ ...row, local: 'Ciudadela NBQ' }], d, DEFAULT_ACCESSORIES, DEFAULT_MATERIALS).rows[0].dp!;
   expect(b).toBeGreaterThan(a); expect(b / a).toBeLessThan(1.001);
 });
+
+describe('longitud para peso máximo', () => {
+  const k = weight({ shape: 'Rectangular', alto: 402, ancho: 932, espesor: 3, longitud: 1, densidad: 7850, extra: 0 }).peso; // kg/mm
+  it('rect 402×932×3, extra 10,36, máx. 80 kg → ≈1108 mm (coincide con la hoja: 79,98 kg a 1108 mm)', () => expect((80 - 10.36) / k).toBeGreaterThan(1108));
+  it('con extra 0 y 80 kg → ≈1273 mm (menor que 1500, manda el peso)', () => expect(80 / k).toBeCloseTo(1273, 0));
+});
