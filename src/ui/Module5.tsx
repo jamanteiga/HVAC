@@ -30,7 +30,7 @@ export function Module5() {
   const { project: p, setTables } = useStore();
   const [q, setQ] = useState('3600'); const [v, setV] = useState('8'); const [mat, setMat] = useState('Acero galvanizado');
   const [mode, setMode] = useState<'exceso' | 'proximo'>('exceso'); const [tab, setTab] = useState('circ');
-  const [rmin, setRmin] = useState('100'); const [rmax, setRmax] = useState('1000'); const [rstep, setRstep] = useState('50'); const [rratio, setRratio] = useState('6');
+  const [rmin, setRmin] = useState('100'); const [rmax, setRmax] = useState('1000'); const [rstep, setRstep] = useState('50'); const [rratio, setRratio] = useState('3.5'); const [oratio, setOratio] = useState('6');
   const [fixH, setFixH] = useState(''); const [fixW, setFixW] = useState('');
   const [omax, setOmax] = useState(''); const [paste, setPaste] = useState(''); const [sel, setSel] = useState<string | null>(null);
   const Q = parseNum(q) ?? 0, V = parseNum(v) ?? 0;
@@ -39,8 +39,8 @@ export function Module5() {
   const circS = p.circSizes ?? R20_SERIES; const ovalT = p.ovalSizes ?? provisionalOval(); const provisional = !p.ovalSizes;
   const A = valid ? requiredArea(Q, V) : 0;
   const circ = useMemo(() => valid ? circularOptions(Q, V, circS, ctx) : [], [Q, V, circS, ctx, valid]);
-  const rect = useMemo(() => valid ? rectOptions(Q, V, ctx, { min: parseNum(rmin) ?? 100, maxH: parseNum(rmax) ?? 1000, stepH: Math.max(5, parseNum(rstep) ?? 50), mode, fixH: parseNum(fixH), fixW: parseNum(fixW), maxRatio: parseNum(rratio) ?? 6 }) : [], [Q, V, ctx, rmin, rmax, rstep, rratio, mode, fixH, fixW, valid]);
-  const oval = useMemo(() => valid ? ovalOptions(Q, V, ovalT, ctx, { maxMinor: parseNum(omax), maxRatio: parseNum(rratio) ?? 6, mode }) : [], [Q, V, ovalT, ctx, omax, rratio, mode, valid]);
+  const rect = useMemo(() => valid ? rectOptions(Q, V, ctx, { min: parseNum(rmin) ?? 100, maxH: parseNum(rmax) ?? 1000, stepH: Math.max(5, parseNum(rstep) ?? 50), mode, fixH: parseNum(fixH), fixW: parseNum(fixW), maxRatio: parseNum(rratio) ?? 3.5 }) : [], [Q, V, ctx, rmin, rmax, rstep, rratio, mode, fixH, fixW, valid]);
+  const oval = useMemo(() => valid ? ovalOptions(Q, V, ovalT, ctx, { maxMinor: parseNum(omax), maxRatio: parseNum(oratio) ?? 6, mode }) : [], [Q, V, ovalT, ctx, omax, oratio, mode, valid]);
   const num = (val: string, set: (s: string) => void) => <Input value={val} onChange={(_, x) => set(x.value)} />;
   const ovalRows = useMemo(() => ovalT.map((t, i) => ({ ...t, uid: String(i) })), [ovalT]);
   const ovalCols: ColDef[] = [numCol('minor', 'Eje menor (mm)', { d: 0, flex: 1 }), numCol('major', 'Eje mayor (mm)', { d: 0, flex: 1 })];
@@ -70,12 +70,12 @@ export function Module5() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))', gap: 10 }}>
           <Field label="Alto fijo (mm, opc.)">{num(fixH, setFixH)}</Field><Field label="Ancho fijo (mm, opc.)">{num(fixW, setFixW)}</Field>
           <Field label="Alto mín. (mm)">{num(rmin, setRmin)}</Field><Field label="Alto máx. (mm)">{num(rmax, setRmax)}</Field>
-          <Field label="Paso de alto (mm)">{num(rstep, setRstep)}</Field><Field label="Relación máx.">{num(rratio, setRratio)}</Field></div>
+          <Field label="Paso de alto (mm)">{num(rstep, setRstep)}</Field><Field label="Relación máx. (1:x)">{num(rratio, setRratio)}</Field></div>
         <Result rows={rect} kind="dim" vt={V} /></Card>}
       {tab === 'oval' && <Card><Subtitle2>Oval plano — menor eje a cada medida normalizada</Subtitle2>
         {provisional && <MessageBar intent="warning"><MessageBarBody>Tabla PROVISIONAL (eje menor R20 × eje mayor en pasos de 50). Sustitúyela por la del fabricante en «Tablas normalizadas».</MessageBarBody></MessageBar>}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))', gap: 10 }}>
-          <Field label="Eje menor máx. (mm, opc.)">{num(omax, setOmax)}</Field><Field label="Relación máx. mayor/menor">{num(rratio, setRratio)}</Field></div>
+          <Field label="Eje menor máx. (mm, opc.)">{num(omax, setOmax)}</Field><Field label="Relación máx. mayor/menor">{num(oratio, setOratio)}</Field></div>
         <Result rows={oval} kind="dim" vt={V} />
         <Text size={200} style={{ color: '#616161' }}>Área oval plano = π·b²/4 + b·(a − b), con b = eje menor y a = eje mayor.</Text></Card>}
       {tab === 'tablas' && (

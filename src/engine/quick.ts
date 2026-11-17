@@ -46,7 +46,7 @@ export interface RectOpts { min: number; maxH: number; stepH: number; mode: 'exc
 export function rectOptions(q: number, vt: number, ctx: Ctx, o: RectOpts): Opt[] {
   const A = requiredArea(q, vt) * 1e6; // mm²
   const rnd = o.mode === 'exceso' ? ceil5 : round5;
-  const mkRect = (H: number, W: number, label = '') => { const r = mk('Rectangular', q, vt, ctx, { a: H, b: W }, (H * W) / 1e6); r.label = label; r.extra = `${(Math.max(H, W) / Math.min(H, W)).toFixed(2)}:1`; return r; };
+  const mkRect = (H: number, W: number, label = '') => { const r = mk('Rectangular', q, vt, ctx, { a: H, b: W }, (H * W) / 1e6); r.label = label; const ratio = Math.max(H, W) / Math.min(H, W); r.extra = `${ratio.toFixed(2)}:1`; if (label && ratio > o.maxRatio + 1e-9) r.label = `${label} · supera 1:${o.maxRatio}`; return r; };
   const out: Opt[] = [];
   if (o.fixH && o.fixH > 0) out.push(mkRect(o.fixH, Math.max(5, rnd(A / o.fixH)), `Alto fijo ${o.fixH}`));
   if (o.fixW && o.fixW > 0) out.push(mkRect(Math.max(5, rnd(A / o.fixW)), o.fixW, `Ancho fijo ${o.fixW}`));

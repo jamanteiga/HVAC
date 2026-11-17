@@ -113,3 +113,10 @@ describe('dimensionado rápido', () => {
   });
   it('parsea tabla pegada', () => expect(parseOvalTable('100 x 200\n150;300\n250\t500,5')).toEqual([{ minor: 100, major: 200 }, { minor: 150, major: 300 }, { minor: 250, major: 500.5 }]));
 });
+
+describe('rectangular relación máx. 1:3,5', () => {
+  it('ninguna alternativa supera 3,5', () => {
+    const o = rectOptions(3600, 8, { rough: 0.15, tC: 24 }, { min: 100, maxH: 1000, stepH: 5, mode: 'exceso', maxRatio: 3.5 });
+    expect(o.length).toBeGreaterThan(5); for (const r of o) expect(Math.max(r.a!, r.b!) / Math.min(r.a!, r.b!)).toBeLessThanOrEqual(3.5 + 1e-9);
+  });
+});
