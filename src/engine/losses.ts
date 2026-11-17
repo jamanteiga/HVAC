@@ -2,6 +2,7 @@ import { Accessory, DesignData, LossRow, Material } from './types';
 import { area, equivalentDiameter, hydraulicDiameter, Dims } from './geometry';
 import { colebrook } from './friction';
 import { airProps } from './air';
+import { defaultLocales } from './defaults';
 import { pos } from './units';
 
 export interface LossCalc {
@@ -25,6 +26,7 @@ export function rowDims(r: LossRow): Dims {
 
 export function calcLosses(rows: LossRow[], d: DesignData, accessories: Accessory[], materials: Material[], tC?: number): LossSummary {
   const air = airProps(tC ?? d.tIntVerano, d.presion);
+  const locales = d.locales ?? defaultLocales();
   const accMap = new Map(accessories.map(a => [a.name.trim(), a.k]));
   const matMap = new Map(materials.map(m => [m.name.trim(), m.roughness]));
   const out: LossCalc[] = rows.map(r => ({
@@ -42,9 +44,11 @@ export function calcLosses(rows: LossRow[], d: DesignData, accessories: Accessor
     if (!o.area || !pos(r.caudal)) return;
     o.v = r.caudal / 3600 / o.area;
     if (!o.dh) return;
-    o.re = (o.v * o.dh) / air.nu;
+    const loc = r.local ? locales.find(l => l.name === r.local) : undefined;
+    const ap = loc?.nbq ? airProps(tC ?? d.tIntVerano, d.presion + loc.overP) : air; // local NBQ en sobrepresión
+    o.re = (o.v * o.dh) / ap.nu;
     o.f = o.rough != null ? colebrook(o.re, o.rough / 1000, o.dh) : null;
-    const q = (air.rho * o.v * o.v) / 2;
+    const q = (ap.rho * o.v * o.v) / 2;
     if (r.accesorio.trim() === 'Conducto') o.dp = o.f != null && pos(r.longitud) ? o.f * ((r.longitud / 1000) / o.dh) * q : (pos(r.longitud) ? null : 0);
     else o.dp = o.k != null ? o.k * q : null;
     // ruido

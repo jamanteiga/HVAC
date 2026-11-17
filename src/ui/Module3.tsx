@@ -22,8 +22,8 @@ export function Module3() {
       {rep.sections.slice(0, 3).map(s => (
         <Card key={s.title}><Subtitle2>{s.title}</Subtitle2>
           <table style={{ borderCollapse: 'collapse', fontSize: 13 }}>
-            <thead><tr>{s.head.map(h => <th key={h} style={{ textAlign: 'left', padding: '4px 12px', background: '#f3f3f3', borderBottom: '1px solid #e0e0e0' }}>{h}</th>)}</tr></thead>
-            <tbody>{s.body.map((r, i) => <tr key={i}>{r.map((c, j) => <td key={j} style={{ padding: '4px 12px', borderBottom: '1px solid #f0f0f0' }}>{c}</td>)}</tr>)}</tbody>
+            <thead><tr>{s.head.map(h => <th key={h} style={{ textAlign: 'left', padding: '4px 12px', background: 'var(--hdr)', borderBottom: '1px solid var(--border)' }}>{h}</th>)}</tr></thead>
+            <tbody>{s.body.map((r, i) => <tr key={i}>{r.map((c, j) => <td key={j} style={{ padding: '4px 12px', borderBottom: '1px solid var(--border2)' }}>{c}</td>)}</tr>)}</tbody>
           </table></Card>))}
       <Card><Subtitle2>El informe exportado incluye además</Subtitle2>
         <div style={{ fontSize: 13 }}>Listado completo de conductos ({p.ducts.length}), rejillas exteriores ({p.grilles.length}) y pérdidas de carga ({p.losses.length}).</div></Card>

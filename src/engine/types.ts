@@ -2,7 +2,10 @@ export type Shape = 'Circular' | 'Rectangular' | 'Oval';
 export type DuctTypeId = 1 | 2 | 3 | 4;
 export type Mfr = 'Munters' | 'Fabricated';
 
-export const SHIP_TYPES = ['Buque militar', 'Plataforma', 'Yate', 'Buque hidrográfico', 'BAC', 'BLOR'] as const;
+export const SHIP_TYPES = ['Fragata', 'Buque aprovisionamiento', 'Corbeta', 'BAM', 'Patrullera', 'Submarino', 'Portaaeronaves', 'Buque de intervención', 'FSS', 'Alfa4000'] as const;
+
+export interface Local { name: string; vTarget: number; vMin: number; vMax: number; nbq: boolean; overP: number } // m/s, m/s, m/s, sobrepresión Pa
+export interface WeightRow { uid: string; descripcion: string; shape: 'Rectangular' | 'Circular' | 'Oval'; dims: string; longitud: number; espesor: number; peso: number; extra: number; total: number }
 export const ELEMENT_TYPES = ['Codo', 'Conducto', 'Difusor', 'Plenum', 'Reducción', 'Te', 'Terminal'] as const;
 
 export interface DesignData {
@@ -23,6 +26,7 @@ export interface DesignData {
   relacionAspecto: number;    // ancho/alto
   tolVel: number;             // % tolerancia "igual"
   velTipos: Record<DuctTypeId, number>; // m/s
+  locales?: Local[];          // undefined = locales por defecto
 }
 
 export interface DuctRow {
@@ -62,6 +66,7 @@ export interface LossRow {
   diam: number | null;
   longitud: number | null; // mm
   material: string;
+  local?: string;
 }
 
 export interface Accessory { name: string; k: number }
@@ -77,5 +82,6 @@ export interface Project {
   materials: Material[];
   ovalSizes?: { minor: number; major: number }[]; // undefined = tabla provisional
   circSizes?: number[];
+  weights?: WeightRow[];
   updatedAt: number;
 }

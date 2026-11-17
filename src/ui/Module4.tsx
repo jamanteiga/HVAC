@@ -36,20 +36,20 @@ export function Module4() {
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <Button appearance="primary" icon={<Save24Regular />} disabled={!ready} onClick={() => guard(() => repo.save(project), 'Proyecto guardado')}>Guardar proyecto actual</Button>
           <Button icon={<DocumentAdd24Regular />} onClick={() => { if (confirm('Se descartarán los cambios sin guardar del proyecto actual. ¿Crear un proyecto nuevo?')) reset(); }}>Proyecto nuevo</Button>
-          <Text style={{ alignSelf: 'center', color: '#616161' }}>Actual: <b>{project.design.nombre || 'sin nombre'}</b></Text></div>
+          <Text style={{ alignSelf: 'center', color: 'var(--subtle)' }}>Actual: <b>{project.design.nombre || 'sin nombre'}</b></Text></div>
       </Card>
       <Card><Subtitle2>Proyectos guardados ({list.length})</Subtitle2>
         <table style={{ borderCollapse: 'collapse', fontSize: 13, width: '100%' }}>
-          <thead><tr>{['Nombre', 'Código', 'Cliente', 'Tipo', 'Modificado', ''].map(h => <th key={h} style={{ textAlign: 'left', padding: '6px 10px', background: '#f3f3f3', borderBottom: '1px solid #e0e0e0' }}>{h}</th>)}</tr></thead>
+          <thead><tr>{['Nombre', 'Código', 'Cliente', 'Tipo', 'Modificado', ''].map(h => <th key={h} style={{ textAlign: 'left', padding: '6px 10px', background: 'var(--hdr)', borderBottom: '1px solid var(--border)' }}>{h}</th>)}</tr></thead>
           <tbody>{list.map(m => (
             <tr key={m.id}><td style={td}>{m.nombre || '(sin nombre)'}</td><td style={td}>{m.codigo}</td><td style={td}>{m.cliente}</td><td style={td}>{m.tipoBuque}</td><td style={td}>{new Date(m.updatedAt).toLocaleString('es-ES')}</td>
               <td style={{ ...td, whiteSpace: 'nowrap' }}>
                 <Button size="small" icon={<FolderOpen24Regular />} onClick={() => guard(async () => { const p = await repo.load(m.id); if (!p) throw new Error('No encontrado'); setProject(p); }, 'Proyecto recuperado')}>Abrir</Button>{' '}
                 <Button size="small" icon={<Copy24Regular />} onClick={() => { const n = prompt('Nombre del nuevo proyecto', `${m.nombre} (copia)`); if (n) guard(async () => { await repo.copy(m.id, n); }, 'Proyecto copiado'); }}>Copiar a nuevo</Button>{' '}
                 <Button size="small" icon={<Delete24Regular />} onClick={() => { if (confirm(`¿Eliminar «${m.nombre}»? Esta acción no se puede deshacer.`)) guard(() => repo.remove(m.id), 'Proyecto eliminado'); }}>Eliminar</Button></td></tr>))}
-            {!list.length && <tr><td colSpan={6} style={{ ...td, color: '#616161' }}>{ready ? 'Sin proyectos guardados.' : 'Inicia sesión para ver tus proyectos.'}</td></tr>}</tbody>
+            {!list.length && <tr><td colSpan={6} style={{ ...td, color: 'var(--subtle)' }}>{ready ? 'Sin proyectos guardados.' : 'Inicia sesión para ver tus proyectos.'}</td></tr>}</tbody>
         </table></Card>
     </div>
   );
 }
-const td: React.CSSProperties = { padding: '6px 10px', borderBottom: '1px solid #f0f0f0' };
+const td: React.CSSProperties = { padding: '6px 10px', borderBottom: '1px solid var(--border2)' };

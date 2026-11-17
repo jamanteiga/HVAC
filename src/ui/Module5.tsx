@@ -3,11 +3,12 @@ import { Card, Field, Input, Dropdown, Option, TabList, Tab, Title3, Subtitle2, 
 import { ColDef } from 'ag-grid-community';
 import { useStore } from '../store';
 import { DataGrid, numCol, parseNum } from './DataGrid';
+import { defaultLocales } from '../engine/defaults';
 import { circularOptions, rectOptions, ovalOptions, provisionalOval, R20_SERIES, requiredArea, parseOvalTable, Opt } from '../engine/quick';
 
 const f = (v: number, d = 2) => v.toLocaleString('es-ES', { minimumFractionDigits: d, maximumFractionDigits: d });
-const th: React.CSSProperties = { textAlign: 'left', padding: '6px 12px', background: '#f3f3f3', borderBottom: '1px solid #e0e0e0', whiteSpace: 'nowrap' };
-const td: React.CSSProperties = { padding: '5px 12px', borderBottom: '1px solid #f0f0f0', whiteSpace: 'nowrap' };
+const th: React.CSSProperties = { textAlign: 'left', padding: '6px 12px', background: 'var(--hdr)', borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap' };
+const td: React.CSSProperties = { padding: '5px 12px', borderBottom: '1px solid var(--border2)', whiteSpace: 'nowrap' };
 
 function Result({ rows, kind, vt }: { rows: Opt[]; kind: 'circ' | 'dim'; vt: number }) {
   if (!rows.length) return <MessageBar intent="warning"><MessageBarBody>Sin resultados con estos límites.</MessageBarBody></MessageBar>;
@@ -16,10 +17,10 @@ function Result({ rows, kind, vt }: { rows: Opt[]; kind: 'circ' | 'dim'; vt: num
       <table style={{ borderCollapse: 'collapse', fontSize: 13, width: '100%' }}>
         <thead><tr><th style={th}>{kind === 'circ' ? 'Ø interior (mm)' : 'Interior (mm)'}</th>{kind === 'dim' && <th style={th}>Relación</th>}<th style={th}>Área (m²)</th><th style={th}>v real (m/s)</th><th style={th}>Desv. vs objetivo</th><th style={th}>ΔP (Pa/m)</th><th style={th}>Nota</th></tr></thead>
         <tbody>{rows.map((r, i) => (
-          <tr key={i} style={{ background: r.best ? '#e6f4ea' : undefined, fontWeight: r.best ? 600 : 400 }}>
+          <tr key={i} style={{ background: r.best ? 'var(--best)' : undefined, fontWeight: r.best ? 600 : 400 }}>
             <td style={td}>{kind === 'circ' ? `Ø ${r.d}` : `${r.a} × ${r.b}`}</td>{kind === 'dim' && <td style={td}>{r.extra}</td>}
             <td style={td}>{f(r.area, 4)}</td>
-            <td style={{ ...td, color: r.v > vt * 1.0000001 ? '#c42b1c' : undefined }}>{f(r.v)}</td>
+            <td style={{ ...td, color: r.v > vt * 1.0000001 ? 'var(--over)' : undefined }}>{f(r.v)}</td>
             <td style={td}>{r.dev >= 0 ? '+' : ''}{f(r.dev * 100, 1)} %</td><td style={td}>{f(r.dp, 3)}</td><td style={td}>{r.label}</td></tr>))}</tbody>
       </table>
     </div>
@@ -28,11 +29,12 @@ function Result({ rows, kind, vt }: { rows: Opt[]; kind: 'circ' | 'dim'; vt: num
 
 export function Module5() {
   const { project: p, setTables } = useStore();
-  const [q, setQ] = useState('3600'); const [v, setV] = useState('8'); const [mat, setMat] = useState('Acero galvanizado');
+  const [q, setQ] = useState('3600'); const [v, setV] = useState('8'); const [loc, setLoc] = useState(''); const [mat, setMat] = useState('Acero galvanizado');
   const [mode, setMode] = useState<'exceso' | 'proximo'>('exceso'); const [tab, setTab] = useState('circ');
   const [rmin, setRmin] = useState('100'); const [rmax, setRmax] = useState('1000'); const [rstep, setRstep] = useState('50'); const [rratio, setRratio] = useState('3.5'); const [oratio, setOratio] = useState('6');
   const [fixH, setFixH] = useState(''); const [fixW, setFixW] = useState('');
   const [omax, setOmax] = useState(''); const [paste, setPaste] = useState(''); const [sel, setSel] = useState<string | null>(null);
+  const locales = p.design.locales ?? defaultLocales(); const L = locales.find(l => l.name === loc);
   const Q = parseNum(q) ?? 0, V = parseNum(v) ?? 0;
   const valid = Q > 0 && V > 0;
   const ctx = useMemo(() => ({ rough: p.materials.find(m => m.name === mat)?.roughness ?? 0.15, tC: p.design.tIntVerano, p: p.design.presion }), [p.materials, mat, p.design]);
@@ -53,15 +55,25 @@ export function Module5() {
         <Title3>Dimensionado rápido — medidas interiores</Title3>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(190px,1fr))', gap: 12 }}>
           <Field label="Caudal (m³/h)">{num(q, setQ)}</Field>
-          <Field label="Velocidad (m/s)">{num(v, setV)}</Field>
+          <Field label="Local (velocidad de diseño)"><Dropdown value={loc || '— libre —'} selectedOptions={[loc]} onOptionSelect={(_, o) => { const n = (o.optionValue as string) ?? ''; setLoc(n); const l = locales.find(x => x.name === n); if (l) setV(String(l.vTarget)); }}>
+            <Option value="">— libre —</Option>{locales.map(l => <Option key={l.name} value={l.name}>{l.name}</Option>)}</Dropdown></Field>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}><Field label="Velocidad (m/s) — rango 7 a 10">{num(v, setV)}</Field>
+            <div style={{ display: 'flex', gap: 4 }}>{[7, 8, 9, 10].map(x => <Button key={x} size="small" appearance={V === x ? 'primary' : 'secondary'} onClick={() => setV(String(x))}>{x}</Button>)}</div></div>
           <Field label="Material (para ΔP)"><Dropdown value={mat} selectedOptions={[mat]} onOptionSelect={(_, o) => setMat(o.optionValue as string)}>{p.materials.map(m => <Option key={m.name} value={m.name}>{m.name}</Option>)}</Dropdown></Field>
           <Field label="Criterio de redondeo"><Dropdown value={mode === 'exceso' ? 'Sin superar la velocidad' : 'Medida más próxima'} selectedOptions={[mode]} onOptionSelect={(_, o) => setMode(o.optionValue as any)}>
             <Option value="exceso">Sin superar la velocidad</Option><Option value="proximo">Medida más próxima</Option></Dropdown></Field>
         </div>
+        {valid && (V < 7 || V > 10) && <MessageBar intent="warning"><MessageBarBody>La velocidad {f(V, 1)} m/s está fuera del rango de diseño 7–10 m/s.</MessageBarBody></MessageBar>}
+        {valid && L && (V < L.vMin || V > L.vMax) && <MessageBar intent="warning"><MessageBarBody>Para «{L.name}» el rango es {L.vMin}–{L.vMax} m/s.</MessageBarBody></MessageBar>}
+        {L?.nbq && <Text size={200} style={{ color: 'var(--subtle)' }}>Local NBQ en sobrepresión de {L.overP} Pa respecto a la atmosférica (efecto despreciable en el dimensionado rápido).</Text>}
         {valid && <Text>Área necesaria: <b>{f(A, 4)} m²</b> · Ø equivalente exacto: <b>{f(Math.sqrt((4 * A) / Math.PI) * 1000, 1)} mm</b></Text>}
-        {valid && <Text size={200} style={{ color: '#424242' }}>
+        {valid && <Text size={200} style={{ color: 'var(--text)' }}>
           Recomendado → Circular: <b>{bc ? `Ø ${bc.d}` : '—'}</b> · Rectangular (más próximo): <b>{br ? `${br.a} × ${br.b}` : '—'}</b> · Oval (más próximo): <b>{bo ? `${bo.a} × ${bo.b}` : '—'}</b></Text>}
       </Card>
+      {Q > 0 && <Card><Subtitle2>Comparativa 7 – 10 m/s (mismo caudal)</Subtitle2>
+        <table style={{ borderCollapse: 'collapse', fontSize: 13 }}><thead><tr>{['v (m/s)', 'Área (m²)', 'Circular', 'Rectangular (más próx.)', 'Oval (más próx.)'].map(h => <th key={h} style={th}>{h}</th>)}</tr></thead>
+          <tbody>{[7, 8, 9, 10].map(x => { const c = circularOptions(Q, x, circS, ctx).find(o => o.best); const r = rectOptions(Q, x, ctx, { min: parseNum(rmin) ?? 100, maxH: parseNum(rmax) ?? 1000, stepH: Math.max(5, parseNum(rstep) ?? 50), mode, maxRatio: parseNum(rratio) ?? 3.5 }).find(o => o.best); const o = ovalOptions(Q, x, ovalT, ctx, { maxMinor: parseNum(omax), maxRatio: parseNum(oratio) ?? 6, mode }).find(z => z.best);
+            return <tr key={x} style={{ background: x === V ? 'var(--best)' : undefined }}><td style={td}>{x}</td><td style={td}>{f(requiredArea(Q, x), 4)}</td><td style={td}>{c ? `Ø ${c.d}` : '—'}</td><td style={td}>{r ? `${r.a} × ${r.b}` : '—'}</td><td style={td}>{o ? `${o.a} × ${o.b}` : '—'}</td></tr>; })}</tbody></table></Card>}
       <TabList selectedValue={tab} onTabSelect={(_, d) => setTab(d.value as string)}>
         <Tab value="circ">Circular (Ø normalizados)</Tab><Tab value="rect">Rectangular (múltiplos de 5)</Tab><Tab value="oval">Oval plano (normalizados)</Tab><Tab value="tablas">Tablas normalizadas</Tab>
       </TabList>
@@ -77,7 +89,7 @@ export function Module5() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))', gap: 10 }}>
           <Field label="Eje menor máx. (mm, opc.)">{num(omax, setOmax)}</Field><Field label="Relación máx. mayor/menor">{num(oratio, setOratio)}</Field></div>
         <Result rows={oval} kind="dim" vt={V} />
-        <Text size={200} style={{ color: '#616161' }}>Área oval plano = π·b²/4 + b·(a − b), con b = eje menor y a = eje mayor.</Text></Card>}
+        <Text size={200} style={{ color: 'var(--subtle)' }}>Área oval plano = π·b²/4 + b·(a − b), con b = eje menor y a = eje mayor.</Text></Card>}
       {tab === 'tablas' && (
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 16, minHeight: 440 }}>
           <Card><Subtitle2>Diámetros circulares (mm)</Subtitle2>

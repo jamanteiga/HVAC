@@ -1,4 +1,4 @@
-import { DesignData, DuctTypeId } from './types';
+import { DesignData, DuctTypeId, Local } from './types';
 import { FPM_TO_MS } from './units';
 export * from './defaultsData';
 
@@ -10,7 +10,7 @@ export const DUCT_TYPE_TABLE: { id: DuctTypeId; label: string; fpm: number }[] =
 ];
 
 export const defaultDesign = (): DesignData => ({
-  nombre: '', codigo: '', cliente: '', ingeniero: '', fecha: new Date().toISOString().slice(0, 10), tipoBuque: 'Buque militar',
+  nombre: '', codigo: '', cliente: '', ingeniero: '', fecha: new Date().toISOString().slice(0, 10), tipoBuque: 'Fragata',
   buque: '',
   tIntVerano: 24, tExtVerano: 35, tIntInvierno: 20, tExtInvierno: 5,
   presion: 101325,
@@ -20,3 +20,12 @@ export const defaultDesign = (): DesignData => ({
 });
 
 export const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
+
+/** Valores orientativos de partida (editables): velocidad objetivo y rango por local; NBQ = sobrepresión respecto a la atmosférica. */
+export const defaultLocales = (): Local[] => [
+  { name: 'Acomodación (camarotes)', vTarget: 7, vMin: 7, vMax: 8, nbq: false, overP: 0 },
+  { name: 'Pasillos / zonas comunes', vTarget: 8, vMin: 7, vMax: 9, nbq: false, overP: 0 },
+  { name: 'Galley', vTarget: 9, vMin: 8, vMax: 10, nbq: false, overP: 0 },
+  { name: 'Sala de máquinas', vTarget: 10, vMin: 9, vMax: 10, nbq: false, overP: 0 },
+  { name: 'Ciudadela NBQ', vTarget: 7, vMin: 7, vMax: 8, nbq: true, overP: 50 },
+];

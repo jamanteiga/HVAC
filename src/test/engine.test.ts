@@ -120,3 +120,20 @@ describe('rectangular relación máx. 1:3,5', () => {
     expect(o.length).toBeGreaterThan(5); for (const r of o) expect(Math.max(r.a!, r.b!) / Math.min(r.a!, r.b!)).toBeLessThanOrEqual(3.5 + 1e-9);
   });
 });
+
+import { weight } from '../engine/weights';
+describe('pesos (valores de la hoja de ejemplo)', () => {
+  it('rectangular 402×932×3, L1108, +10,36', () => { const r = weight({ shape: 'Rectangular', alto: 402, ancho: 932, espesor: 3, longitud: 1108, densidad: 7850, extra: 10.36 });
+    expect(r.perimetro).toBe(2668); expect(r.area).toBe(2956144); expect(r.volumen).toBe(8868432); expect(r.peso).toBeCloseTo(69.62, 2); expect(r.total).toBeCloseTo(79.98, 2); });
+  it('circular Ø410×3, L1999', () => { const r = weight({ shape: 'Circular', diam: 410, espesor: 3, longitud: 1999, densidad: 7850, extra: 0 });
+    expect(Math.round(r.perimetro)).toBe(1288); expect(Math.round(r.area)).toBe(2574818); expect(r.peso).toBeCloseTo(60.64, 2); });
+  it('oval 1000×1000×2, L1217 ≈ 60 kg', () => { const r = weight({ shape: 'Oval', alto: 1000, ancho: 1000, espesor: 2, longitud: 1217, densidad: 7850, extra: 20 });
+    expect(r.peso).toBeCloseTo(60, 1); expect(r.total).toBeCloseTo(80, 1); });
+});
+import { defaultLocales } from '../engine/defaults';
+it('local NBQ aumenta ligeramente ρ y ΔP', () => {
+  const d = { ...defaultDesign(), locales: defaultLocales() };
+  const row: LossRow = { uid: 'x', n1: 1, n2: null, n3: null, sistema: '', nLinea: '', tipo: 'Circular', accesorio: 'Codo 90 radio largo', caudal: 3600, alto: null, ancho: null, ovAlto: null, ovAncho: null, diam: 400, longitud: null, material: 'Acero galvanizado' };
+  const a = calcLosses([row], d, DEFAULT_ACCESSORIES, DEFAULT_MATERIALS).rows[0].dp!, b = calcLosses([{ ...row, local: 'Ciudadela NBQ' }], d, DEFAULT_ACCESSORIES, DEFAULT_MATERIALS).rows[0].dp!;
+  expect(b).toBeGreaterThan(a); expect(b / a).toBeLessThan(1.001);
+});

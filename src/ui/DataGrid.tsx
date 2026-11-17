@@ -1,17 +1,15 @@
 import { useMemo, useRef, useState } from 'react';
 import { AgGridReact } from 'ag-grid-react';
-import { AllCommunityModule, ModuleRegistry, themeQuartz, ColDef } from 'ag-grid-community';
+import { AllCommunityModule, ModuleRegistry, ColDef } from 'ag-grid-community';
+import { gridThemeFor, useUi } from '../theme';
 import { Button, Toolbar, ToolbarButton, ToolbarDivider, Tooltip } from '@fluentui/react-components';
 import { Add24Regular, ArrowUp24Regular, ArrowDown24Regular, Delete24Regular, ArrowUpload24Regular } from '@fluentui/react-icons';
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
-export const gridTheme = themeQuartz.withParams({
-  accentColor: '#0067c0', fontFamily: '"Segoe UI Variable","Segoe UI",system-ui,sans-serif', fontSize: 12.5,
-  backgroundColor: '#ffffff', foregroundColor: '#1a1a1a', headerBackgroundColor: '#f3f3f3', headerFontWeight: 600,
-  borderColor: '#e0e0e0', borderRadius: 6, rowHoverColor: '#f5f9fd', selectedRowBackgroundColor: '#e5f1fb', spacing: 5,
-});
 
+/** Color de fondo con texto oscuro legible en cualquier tema. */
+export const paint = (bg?: string, bold = true) => (bg ? { backgroundColor: bg, color: '#111', fontWeight: bold ? 600 : 400 } : undefined);
 export const COLORS = { blue: '#9cc8f0', green: 'rgb(0,255,0)', red: '#ff6b6b', orange: '#ffb347', warn: '#fff4ce', softGreen: '#9be69b' };
 
 export const parseNum = (v: any): number | null => {
@@ -42,10 +40,10 @@ export function DataGrid(p: Props) {
   const file = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const defaultColDef = useMemo<ColDef>(() => ({ resizable: true, sortable: false, minWidth: 60, wrapHeaderText: true, autoHeaderHeight: true }), []);
-  const sel = p.selectedId;
+  const sel = p.selectedId; const theme = useUi(s => s.theme);
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', gap: 6 }}>
-      <Toolbar size="small" style={{ background: '#fff', borderRadius: 8, border: '1px solid #e0e0e0', flexWrap: 'wrap' }}>
+      <Toolbar size="small" style={{ background: 'var(--surface)', borderRadius: 8, border: '1px solid var(--border)', flexWrap: 'wrap' }}>
         {p.onAdd && <Tooltip content="Añadir línea al final" relationship="label"><ToolbarButton icon={<Add24Regular />} onClick={p.onAdd}>Añadir</ToolbarButton></Tooltip>}
         {p.onInsert && <ToolbarButton icon={<ArrowUp24Regular />} disabled={!sel} onClick={() => sel && p.onInsert!(sel, 'above')}>Insertar encima</ToolbarButton>}
         {p.onInsert && <ToolbarButton icon={<ArrowDown24Regular />} disabled={!sel} onClick={() => sel && p.onInsert!(sel, 'below')}>Insertar debajo</ToolbarButton>}
@@ -54,11 +52,11 @@ export function DataGrid(p: Props) {
           <ToolbarButton icon={<ArrowUpload24Regular />} disabled={busy} onClick={() => file.current?.click()}>Importar Excel…</ToolbarButton>
           <input ref={file} type="file" accept=".xlsx,.xlsm" hidden onChange={async e => { const f = e.target.files?.[0]; e.target.value = ''; if (!f) return; setBusy(true); try { await p.onImport!(f); } finally { setBusy(false); } }} /></>}
         {p.extra}
-        <span style={{ marginLeft: 'auto', fontSize: 12, color: '#616161', paddingRight: 8 }}>{p.message ?? `${p.rows.length} filas`}</span>
+        <span style={{ marginLeft: 'auto', fontSize: 12, color: 'var(--subtle)', paddingRight: 8 }}>{p.message ?? `${p.rows.length} filas`}</span>
       </Toolbar>
       <div style={{ flex: 1, minHeight: 0 }}>
         <AgGridReact
-          theme={gridTheme} rowData={p.rows} columnDefs={p.columns} defaultColDef={defaultColDef}
+          theme={gridThemeFor(theme)} rowData={p.rows} columnDefs={p.columns} defaultColDef={defaultColDef}
           getRowId={x => x.data.uid} rowSelection={{ mode: 'singleRow', checkboxes: false, enableClickSelection: true }}
           onSelectionChanged={e => p.onSelect(e.api.getSelectedRows()[0]?.uid ?? null)}
           onCellValueChanged={e => { if (e.colDef.field && e.newValue !== e.oldValue) p.onChange(e.data.uid, e.colDef.field, e.newValue); }}

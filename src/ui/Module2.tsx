@@ -2,12 +2,12 @@ import { useMemo, useState } from 'react';
 import { TabList, Tab, Card, Field, Input, Dropdown, Option, Button, Title3, Subtitle2, Text, MessageBar, MessageBarBody, Divider } from '@fluentui/react-components';
 import { ColDef } from 'ag-grid-community';
 import { useStore } from '../store';
-import { DataGrid, calcCol, numCol, COLORS, parseNum, fmt } from './DataGrid';
+import { DataGrid, calcCol, numCol, COLORS, parseNum, fmt, paint } from './DataGrid';
 import { calcDuct, VelState } from '../engine/ducts';
 import { calcGrille } from '../engine/grilles';
 import { calcLosses } from '../engine/losses';
 import { ELEMENT_TYPES, Shape } from '../engine/types';
-import { DUCT_TYPE_TABLE } from '../engine/defaults';
+import { DUCT_TYPE_TABLE, defaultLocales } from '../engine/defaults';
 import { importDucts, importGrilles, importLosses, readWorkbook } from '../io/importExcel';
 import { sizeDuct, Method } from '../engine/sizing';
 
@@ -31,7 +31,7 @@ function Ducts() {
     numCol('eCaudal', 'Q real esq. (m³/h)', { d: 1, width: 130 }),
     calcCol('V real esq. (m/s)', x => x._c.velEsq),
     numCol('fAlto', 'Alto Foran (mm)', { d: 0, width: 110 }), numCol('fAncho', 'Ancho Foran (mm)', { d: 0, width: 115 }), numCol('fDiam', 'Ø Foran (mm)', { d: 0, width: 105 }),
-    calcCol('V Foran (m/s)', x => x._c.velForan, { width: 110, cellStyle: p => ({ backgroundColor: stateColor(p.data._c.state) ?? '', fontWeight: 600 }) }),
+    calcCol('V Foran (m/s)', x => x._c.velForan, { width: 110, cellStyle: p => paint(stateColor(p.data._c.state)) }),
     calcCol('Q Foran (m³/h)', x => x._c.qForan, { d: 1, width: 115 }),
     numCol('longitud', 'Longitud (mm)', { d: 0, width: 110 }),
     selCol('elemento', 'Elemento', [...ELEMENT_TYPES]),
@@ -61,7 +61,7 @@ function Grilles() {
     calcCol('V calculada (m/s)', x => x._c.velCalc, { width: 120 }),
     numCol('alto', 'Alto (mm)', { d: 0 }), numCol('ancho', 'Ancho (mm)', { d: 0 }),
     calcCol('Área real (m²)', x => x._c.areaReal, { d: 4 }),
-    calcCol('V real (m/s)', x => x._c.velReal, { cellStyle: p => ({ backgroundColor: p.data._c.state === 'high' ? COLORS.red : p.data._c.state === 'low' ? COLORS.green : '', fontWeight: 600 }) }),
+    calcCol('V real (m/s)', x => x._c.velReal, { cellStyle: p => paint(p.data._c.state === 'high' ? COLORS.red : p.data._c.state === 'low' ? COLORS.green : undefined) }),
     calcCol('Tag Foran', x => x._c.tag, { type: undefined, width: 110 }),
   ], []);
   return <DataGrid rows={rows} columns={cols} selectedId={selected.grilles} onSelect={id => setSelected('grilles', id)}
@@ -76,14 +76,16 @@ function Losses() {
   const { project: p, selected, setSelected, update, add, remove, replaceRows } = useStore(); const [msg, setMsg] = useState('');
   const sum = useMemo(() => calcLosses(p.losses, p.design, p.accessories, p.materials), [p]);
   const rows = useMemo(() => p.losses.map((r, i) => ({ ...r, _c: sum.rows[i] })), [p.losses, sum]);
+  const localNames = (p.design.locales ?? defaultLocales()).map(l => l.name);
   const accNames = useMemo(() => [...p.accessories.map(a => a.name)].sort((a, b) => a.localeCompare(b, 'es')), [p.accessories]);
   const cols: ColDef[] = useMemo(() => [
     numCol('n1', 'N1 Principal', { d: 0, width: 95, pinned: 'left' }), numCol('n2', 'N2 Ramal', { d: 0, width: 85, pinned: 'left' }), numCol('n3', 'N3 Derivación', { d: 0, width: 105, pinned: 'left' }),
     calcCol('ID tramo', x => x._c.idTramo, { type: undefined, width: 85 }), calcCol('ID padre', x => x._c.idPadre, { type: undefined, width: 105 }),
     { field: 'sistema', headerName: 'Sistema', width: 90, editable: true }, { field: 'nLinea', headerName: 'Nº línea', width: 85, editable: true },
     selCol('tipo', 'Tipo conducto', ['Circular', 'Rectangular', 'Oval'], 125),
+    { field: 'local', headerName: 'Local', width: 190, editable: true, cellEditor: 'agSelectCellEditor', cellEditorParams: { values: ['', ...localNames] } },
     { field: 'accesorio', headerName: 'Accesorio', width: 260, editable: true, cellEditor: 'agSelectCellEditor', cellEditorParams: { values: accNames, allowTyping: true, filterList: true, searchType: 'matchAny' } },
-    calcCol('K', x => x._c.k, { width: 70, cellStyle: p => (p.data._c.k == null ? { backgroundColor: COLORS.warn } : undefined) }),
+    calcCol('K', x => x._c.k, { width: 70, cellStyle: p => (p.data._c.k == null ? paint(COLORS.warn, false) : undefined) }),
     numCol('caudal', 'Q (m³/h)', { d: 1 }), calcCol('V (m/s)', x => x._c.v),
     numCol('alto', 'Alto rect. (mm)', { d: 0, width: 110 }), numCol('ancho', 'Ancho rect. (mm)', { d: 0, width: 115 }),
     numCol('ovAlto', 'Alto oval (mm)', { d: 0, width: 110 }), numCol('ovAncho', 'Ancho oval (mm)', { d: 0, width: 115 }), numCol('diam', 'Ø (mm)', { d: 0, width: 85 }),
@@ -92,10 +94,10 @@ function Losses() {
     { field: 'material', headerName: 'Material', width: 170, editable: true, cellEditor: 'agSelectCellEditor', cellEditorParams: { values: p.materials.map(m => m.name) } },
     calcCol('ε (mm)', x => x._c.rough, { d: 4, width: 80 }), calcCol('Reynolds', x => x._c.re, { d: 0 }), calcCol('f', x => x._c.f, { d: 5, width: 85 }),
     calcCol('ΔP (Pa)', x => x._c.dp, { d: 2 }),
-    calcCol('ΔP total (Pa)', x => x._c.dpTotal, { d: 2, width: 115, cellStyle: p => (p.data._c.isMax ? { backgroundColor: COLORS.orange, fontWeight: 700 } : undefined) }),
-    calcCol('Ruido (dB)', x => x._c.noise, { d: 1, cellStyle: p => (p.data._c.noise == null ? undefined : { backgroundColor: p.data._c.noise >= 50 ? COLORS.red : COLORS.softGreen }) }),
+    calcCol('ΔP total (Pa)', x => x._c.dpTotal, { d: 2, width: 115, cellStyle: p => (p.data._c.isMax ? paint(COLORS.orange) : undefined) }),
+    calcCol('Ruido (dB)', x => x._c.noise, { d: 1, cellStyle: p => (p.data._c.noise == null ? undefined : paint(p.data._c.noise >= 50 ? COLORS.red : COLORS.softGreen, false)) }),
     calcCol('Avisos', x => x._c.warn ?? '', { type: undefined, width: 200 }),
-  ], [accNames, p.materials]);
+  ], [accNames, p.materials, localNames.join('|')]);
   return <DataGrid rows={rows} columns={cols} selectedId={selected.losses} onSelect={id => setSelected('losses', id)}
     onChange={(id, f, v) => update('losses', id, { [f]: v })}
     onAdd={() => add('losses')} onInsert={(id, w) => add('losses', { uid: id, where: w })} onRemove={id => remove('losses', id)}
