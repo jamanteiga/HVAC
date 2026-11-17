@@ -1,32 +1,10 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>HVAC</title>
-<link rel="manifest" href="manifest.webmanifest">
-<meta name="theme-color" content="#0f6cbd">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="HVAC">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
-<link rel="icon" type="image/png" href="icons/icon-192.png">
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-<script>try{document.documentElement.dataset.theme=localStorage.getItem("hvac:theme")||"claro"}catch(e){}</script>
-<link rel="stylesheet" href="css/styles.css">
-</head>
-<body>
-<header>
-<span class="logo">HVAC</span><span class="title">Cálculo HVAC naval</span>
-<nav id="nav"></nav>
-<label class="theme">Tema <select id="theme"><option value="claro">Claro</option><option value="azulado">Azulado</option><option value="grisaceo">Grisáceo</option><option value="oscuro">Oscuro</option></select></label>
-</header>
-<main>
-<section id="view"></section>
-<aside class="card"><h2>Resumen</h2><div id="sum"></div></aside>
-</main>
-<script src="js/data.js"></script>
-<script src="js/engine.js"></script>
-<script src="js/app.js"></script>
-</body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ShipHVAC</title>
+    <style>html,body,#root{height:100%;margin:0;background:#f3f3f3;font-family:"Segoe UI Variable","Segoe UI",system-ui,sans-serif}</style>
+  </head>
+  <body><div id="root"></div><script type="module" src="/src/main.tsx"></script></body>
 </html>
