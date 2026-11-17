@@ -2,7 +2,7 @@ export type Shape = 'Circular' | 'Rectangular' | 'Oval';
 export type DuctTypeId = 1 | 2 | 3 | 4;
 export type Mfr = 'Munters' | 'Fabricated';
 
-export const SHIP_TYPES = ['Fragata', 'Buque aprovisionamiento', 'Corbeta', 'BAM', 'Patrullera', 'Submarino', 'Portaaeronaves', 'Buque de intervención', 'FSS', 'Alfa4000'] as const;
+export const SHIP_TYPES = ['Fragata', 'Corbeta', 'BAC', 'BAM', 'BAM-IS', 'BAM-AGI', 'Patrullera', 'Submarino', 'Portaaeronaves', 'Buque de intervención', 'FSS', 'LPD', 'BHC', 'LHD', 'LCM-1', 'LCM-1E', 'LASV75', 'USV', 'UUV/AUV', 'TCG', 'ALFA 4000'] as const;
 
 export interface Local { name: string; vTarget: number; vMin: number; vMax: number; nbq: boolean; overP: number } // m/s, m/s, m/s, sobrepresión Pa
 export interface WeightRow { uid: string; descripcion: string; shape: 'Rectangular' | 'Circular' | 'Oval'; dims: string; longitud: number; espesor: number; peso: number; extra: number; total: number }
