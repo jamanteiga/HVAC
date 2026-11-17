@@ -1,39 +1,20 @@
 # HVAC
+SPA React + TypeScript + Vite · Fluent UI (estilo Windows 11) · AG Grid · Firebase (Auth + Firestore).
 
-Aplicación web para el cálculo de ventilación y climatización (HVAC) en entorno naval: datos de diseño, dimensionamiento de conductos, pérdidas de carga, ruido, reportes y proyectos guardados.
+## Uso
+- `npm install` · `npm run dev` · `npm run build` (salida en `dist/`, válido para GitHub Pages) · `npm test`
+- Firebase: copia `.env.example` a `.env`, rellena las claves, publica `firestore.rules`. Sin `.env` la app guarda en el navegador (modo local).
 
-## Estructura
+## Unidades
+Interfaz en mm, m/s, m³/h, Pa. La importación convierte pulgadas→mm, CFM→m³/h, fpm→m/s, ft²→m².
 
-```
-index.html        Página principal
-css/styles.css    Estilos y temas (claro, azulado, grisáceo, oscuro)
-js/data.js        Tablas de accesorios (K) y materiales, estado y utilidades
-js/engine.js      Motor físico (Darcy-Weisbach, Colebrook-White) y dimensionamiento
-js/app.js         Interfaz, proyectos y eventos
-.nojekyll         Evita el procesado de Jekyll en GitHub Pages
-```
+## Decisiones de cálculo
+- Fricción: Colebrook-White iterativo (laminar 64/Re). ρ y ν se calculan con la T interior de verano (Módulo 1).
+- Diámetro hidráulico oval corregido (4A/P, elipse con perímetro de Ramanujan); el de la hoja original daba la mitad.
+- Pérdidas: una fila por accesorio, agrupadas por ID TRAMO (N1.N2.N3). ΔP total de una fila = total al final del tramo padre + acumulado del tramo hasta esa fila.
+- Métodos de dimensionado: fricción igual, velocidad reducida, recuperación estática.
+- Tabla de accesorios: «Junta flexible» duplicada → la segunda se llama «Junta flexible (2)».
 
-No requiere compilación ni dependencias: son archivos estáticos.
-
-## Uso en local
-
-Abre `index.html` en el navegador.
-
-## Publicar en GitHub Pages
-
-1. Crea un repositorio en GitHub y sube todos los archivos a la raíz.
-2. Settings → Pages → Source: "Deploy from a branch" → rama `main`, carpeta `/ (root)`.
-3. La web quedará en `https://<usuario>.github.io/<repositorio>/`.
-
-## Proyectos guardados
-
-Se guardan en el navegador (localStorage). Las funciones `loadDB` y `saveDB` en `js/app.js` están aisladas para sustituirlas por Firebase.
-
-## Móvil y tablet
-
-Funciona en iPad, iPhone y Android desde el navegador. Se puede instalar como app:
-
-- iPhone/iPad (Safari): Compartir → "Añadir a pantalla de inicio".
-- Android (Chrome): menú ⋮ → "Instalar aplicación" o "Añadir a pantalla de inicio".
-
-En pantallas estrechas las tablas se muestran como tarjetas. Tras instalarla funciona sin conexión.
+## Despliegue (GitHub Pages)
+Settings → Pages → Source: **GitHub Actions**. Las claves de Firebase van en Settings → Secrets and variables → Actions (`VITE_FIREBASE_*`).
+La versión anterior (estática) se conserva en `legacy/`.
