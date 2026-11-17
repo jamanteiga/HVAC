@@ -18,13 +18,15 @@ const FIELDS: Record<WShape, { k: K; label: string; unit: string }[]> = {
   Oval: [{ k: 'alto', label: 'Alto', unit: 'mm' }, { k: 'ancho', label: 'Ancho', unit: 'mm' }, { k: 'espesor', label: 'Espesor', unit: 'mm' }, { k: 'longitud', label: 'Longitud', unit: 'mm' }],
 };
 
+// Fila de la tabla: definida fuera de Calc para que no se vuelva a montar en cada pulsación (si no, el campo pierde el foco).
+const Row = ({ label, color, children, unit, bold }: any) => (<tr style={{ background: color, fontWeight: bold ? 700 : 400 }}><td style={cell}>{label}</td><td style={{ ...cell, textAlign: 'right', width: 120 }}>{children}</td><td style={{ ...cell, textAlign: 'center', width: 70 }}>{unit}</td></tr>);
+
 function Calc({ shape, rho, desc, onAdd }: { shape: WShape; rho: string; desc: string; onAdd: (r: WeightRow) => void }) {
   const [v, setV] = useState<Record<string, string>>({ espesor: '3', extra: '0' });
   const n = (k: K) => parseNum(v[k]) ?? 0;
   const R = useMemo(() => weight({ shape, alto: n('alto'), ancho: n('ancho'), diam: n('diam'), espesor: n('espesor'), longitud: n('longitud'), densidad: parseNum(rho) ?? 7850, extra: n('extra') }), [v, shape, rho]); // eslint-disable-line
   const ok = R.total > 0;
   const dims = shape === 'Circular' ? `Ø${n('diam')}` : `${n('alto')}×${n('ancho')}`;
-  const Row = ({ label, color, children, unit, bold }: any) => (<tr style={{ background: color, fontWeight: bold ? 700 : 400 }}><td style={cell}>{label}</td><td style={{ ...cell, textAlign: 'right', width: 120 }}>{children}</td><td style={{ ...cell, textAlign: 'center', width: 70 }}>{unit}</td></tr>);
   return (
     <Card style={{ padding: 0, overflow: 'hidden', minWidth: 320 }}>
       <table style={{ borderCollapse: 'collapse', width: '100%', fontSize: 13 }}>
