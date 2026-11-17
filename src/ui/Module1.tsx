@@ -1,4 +1,4 @@
-import { Card, Dropdown, Field, Input, Option, Textarea, Title3, Subtitle2, Text, Divider } from '@fluentui/react-components';
+import { Button, MessageBar, MessageBarBody, Card, Dropdown, Field, Input, Option, Textarea, Title3, Subtitle2, Text, Divider } from '@fluentui/react-components';
 import { useStore } from '../store';
 import { SHIP_TYPES, DesignData } from '../engine/types';
 import { calcLosses } from '../engine/losses';
@@ -9,11 +9,14 @@ import { useMemo, useState } from 'react';
 import { ColDef } from 'ag-grid-community';
 import { DataGrid, numCol } from './DataGrid';
 import { defaultLocales } from '../engine/defaults';
+import { saveToFile, openFromFile, hasFileSystem, currentFileName } from '../io/file';
 
 const grid: React.CSSProperties = { display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 12 };
 
 export function Module1() {
   const p = useStore(s => s.project); const set = useStore(s => s.setDesign); const d = p.design;
+  const setProject = useStore(s => s.setProject); const [fmsg, setFmsg] = useState<{ t: 'success' | 'error' | 'info'; m: string } | null>(null);
+  const run = async (fn: () => Promise<string | null>) => { try { const m = await fn(); if (m) setFmsg({ t: 'success', m }); } catch (e: any) { setFmsg({ t: 'error', m: e.message || String(e) }); } };
   const locales = d.locales ?? defaultLocales(); const [lsel, setLsel] = useState<string | null>(null);
   const lrows = locales.map((l, i) => ({ ...l, uid: String(i) }));
   const lcols: ColDef[] = [{ field: 'name', headerName: 'Local / zona', flex: 1, minWidth: 200, editable: true }, numCol('vTarget', 'v objetivo (m/s)', { d: 1, width: 130 }), numCol('vMin', 'v mín. (m/s)', { d: 1, width: 115 }), numCol('vMax', 'v máx. (m/s)', { d: 1, width: 115 }),
@@ -31,6 +34,16 @@ export function Module1() {
   return (
     <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 300px', gap: 16, height: '100%', overflow: 'auto' }}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <Card style={{ gap: 8 }}>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+            <Button appearance="primary" onClick={() => run(async () => { const n = await saveToFile(p); return n ? `Guardado en «${n}»` : null; })}>Guardar proyecto (.json)</Button>
+            {hasFileSystem() && <Button onClick={() => run(async () => { const n = await saveToFile(p, true); return n ? `Guardado en «${n}»` : null; })}>Guardar como…</Button>}
+            <Button onClick={() => run(async () => { const r = await openFromFile(); if (!r) return null; setProject(r.project); return `Abierto «${r.name}»`; })}>Abrir proyecto (.json)</Button>
+            {currentFileName() && <Text size={200} style={{ color: 'var(--subtle)' }}>Fichero actual: {currentFileName()}</Text>}
+          </div>
+          <Text size={200} style={{ color: 'var(--subtle)' }}>{hasFileSystem() ? '«Guardar» sobrescribe el fichero abierto (la primera vez pregunta dónde). ' : 'Guardar descarga el .json a la carpeta de descargas; guárdalo donde quieras. '}Además, los cambios se guardan solos en este navegador.</Text>
+          {fmsg && <MessageBar intent={fmsg.t}><MessageBarBody>{fmsg.m}</MessageBarBody></MessageBar>}
+        </Card>
         <Card><Title3>Proyecto</Title3>
           <div style={grid}>{T('nombre', 'Nombre')}{T('codigo', 'Código')}{T('cliente', 'Cliente')}{T('ingeniero', 'Ingeniero')}{T('fecha', 'Fecha', 'date')}
             <Field label="Tipo de buque"><Dropdown value={d.tipoBuque} selectedOptions={[d.tipoBuque]} onOptionSelect={(_, o) => set({ tipoBuque: o.optionValue as string })}>

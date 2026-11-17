@@ -143,3 +143,12 @@ describe('longitud para peso máximo', () => {
   it('rect 402×932×3, extra 10,36, máx. 80 kg → ≈1108 mm (coincide con la hoja: 79,98 kg a 1108 mm)', () => expect((80 - 10.36) / k).toBeGreaterThan(1108));
   it('con extra 0 y 80 kg → ≈1273 mm (menor que 1500, manda el peso)', () => expect(80 / k).toBeCloseTo(1273, 0));
 });
+
+import { parseProject } from '../io/file';
+describe('fichero .json', () => {
+  it('lee un proyecto guardado y completa campos que falten', () => {
+    const p = parseProject(JSON.stringify({ app: 'HVAC', version: 1, project: { id: 'a', design: { nombre: 'X' }, ducts: [], grilles: [], losses: [] } }));
+    expect(p.design.nombre).toBe('X'); expect(p.design.tIntVerano).toBe(24); expect(p.accessories.length).toBeGreaterThan(100);
+  });
+  it('rechaza ficheros que no son proyectos', () => expect(() => parseProject('{"a":1}')).toThrow());
+});
