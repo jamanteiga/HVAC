@@ -1,4 +1,4 @@
-# ShipHVAC
+# HVAC
 SPA React + TypeScript + Vite · Fluent UI (estilo Windows 11) · AG Grid · Firebase (Auth + Firestore).
 
 ## Uso
@@ -14,3 +14,7 @@ Interfaz en mm, m/s, m³/h, Pa. La importación convierte pulgadas→mm, CFM→m
 - Pérdidas: una fila por accesorio, agrupadas por ID TRAMO (N1.N2.N3). ΔP total de una fila = total al final del tramo padre + acumulado del tramo hasta esa fila.
 - Métodos de dimensionado: fricción igual, velocidad reducida, recuperación estática.
 - Tabla de accesorios: «Junta flexible» duplicada → la segunda se llama «Junta flexible (2)».
+
+## Despliegue (GitHub Pages)
+Settings → Pages → Source: **GitHub Actions**. Las claves de Firebase van en Settings → Secrets and variables → Actions (`VITE_FIREBASE_*`).
+La versión anterior (estática) se conserva en `legacy/`.
