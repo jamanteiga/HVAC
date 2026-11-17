@@ -31,9 +31,8 @@ function Calc({ shape, rho, lmax, pmax }: { shape: WShape; rho: string; lmax: nu
         <tbody>
           {FIELDS[shape].map(f => (
             <Row key={f.k} label={f.label} color={C.in} unit={f.unit}><Input size="small" appearance="underline" value={v[f.k] ?? ''} onChange={(_, x) => setV(s => ({ ...s, [f.k]: x.value }))} style={{ width: 100, background: 'transparent', color: '#111' }} input={{ style: { textAlign: 'right', color: '#111' } }} /></Row>))}
-          <Row label="Densidad" color={C.const} unit="kg/m³">{rho}</Row>
-          <Row label="Peso" color={C.calc} unit="kg">{fmt(R.peso)}</Row>
           <Row label="Peso extra" color={C.in} unit="kg"><Input size="small" appearance="underline" value={v.extra ?? ''} onChange={(_, x) => setV(s => ({ ...s, extra: x.value }))} style={{ width: 100, background: 'transparent' }} input={{ style: { textAlign: 'right', color: '#111' } }} /></Row>
+          <Row label="Peso" color={C.calc} unit="kg">{fmt(R.peso)}</Row>
           <Row label="Peso total" color={C.calc} unit="kg" bold>{fmt(R.total)}</Row>
         </tbody>
       </table>
