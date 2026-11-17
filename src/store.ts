@@ -28,7 +28,7 @@ interface S {
   add: (c: Coll, at?: { uid: string; where: 'above' | 'below' } | null) => void;
   remove: (c: Coll, uid: string) => void;
   replaceRows: (c: Coll, rows: any[]) => void;
-  setTables: (p: Partial<Pick<Project, 'accessories' | 'materials'>>) => void;
+  setTables: (p: Partial<Pick<Project, 'accessories' | 'materials' | 'ovalSizes' | 'circSizes'>>) => void;
 }
 
 const KEY = 'hvac.current';

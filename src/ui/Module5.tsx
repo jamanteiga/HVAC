@@ -1,0 +1,99 @@
+import { useMemo, useState } from 'react';
+import { Card, Field, Input, Dropdown, Option, TabList, Tab, Title3, Subtitle2, Text, MessageBar, MessageBarBody, Textarea, Button } from '@fluentui/react-components';
+import { ColDef } from 'ag-grid-community';
+import { useStore } from '../store';
+import { DataGrid, numCol, parseNum } from './DataGrid';
+import { circularOptions, rectOptions, ovalOptions, provisionalOval, R20_SERIES, requiredArea, parseOvalTable, Opt } from '../engine/quick';
+
+const f = (v: number, d = 2) => v.toLocaleString('es-ES', { minimumFractionDigits: d, maximumFractionDigits: d });
+const th: React.CSSProperties = { textAlign: 'left', padding: '6px 12px', background: '#f3f3f3', borderBottom: '1px solid #e0e0e0', whiteSpace: 'nowrap' };
+const td: React.CSSProperties = { padding: '5px 12px', borderBottom: '1px solid #f0f0f0', whiteSpace: 'nowrap' };
+
+function Result({ rows, kind, vt }: { rows: Opt[]; kind: 'circ' | 'dim'; vt: number }) {
+  if (!rows.length) return <MessageBar intent="warning"><MessageBarBody>Sin resultados con estos límites.</MessageBarBody></MessageBar>;
+  return (
+    <div style={{ overflow: 'auto' }}>
+      <table style={{ borderCollapse: 'collapse', fontSize: 13, width: '100%' }}>
+        <thead><tr><th style={th}>{kind === 'circ' ? 'Ø interior (mm)' : 'Interior (mm)'}</th>{kind === 'dim' && <th style={th}>Relación</th>}<th style={th}>Área (m²)</th><th style={th}>v real (m/s)</th><th style={th}>Desv. vs objetivo</th><th style={th}>ΔP (Pa/m)</th><th style={th}>Nota</th></tr></thead>
+        <tbody>{rows.map((r, i) => (
+          <tr key={i} style={{ background: r.best ? '#e6f4ea' : undefined, fontWeight: r.best ? 600 : 400 }}>
+            <td style={td}>{kind === 'circ' ? `Ø ${r.d}` : `${r.a} × ${r.b}`}</td>{kind === 'dim' && <td style={td}>{r.extra}</td>}
+            <td style={td}>{f(r.area, 4)}</td>
+            <td style={{ ...td, color: r.v > vt * 1.0000001 ? '#c42b1c' : undefined }}>{f(r.v)}</td>
+            <td style={td}>{r.dev >= 0 ? '+' : ''}{f(r.dev * 100, 1)} %</td><td style={td}>{f(r.dp, 3)}</td><td style={td}>{r.label}</td></tr>))}</tbody>
+      </table>
+    </div>
+  );
+}
+
+export function Module5() {
+  const { project: p, setTables } = useStore();
+  const [q, setQ] = useState('3600'); const [v, setV] = useState('8'); const [mat, setMat] = useState('Acero galvanizado');
+  const [mode, setMode] = useState<'exceso' | 'proximo'>('exceso'); const [tab, setTab] = useState('circ');
+  const [rmin, setRmin] = useState('100'); const [rmax, setRmax] = useState('1000'); const [rstep, setRstep] = useState('50'); const [rratio, setRratio] = useState('6');
+  const [fixH, setFixH] = useState(''); const [fixW, setFixW] = useState('');
+  const [omax, setOmax] = useState(''); const [paste, setPaste] = useState(''); const [sel, setSel] = useState<string | null>(null);
+  const Q = parseNum(q) ?? 0, V = parseNum(v) ?? 0;
+  const valid = Q > 0 && V > 0;
+  const ctx = useMemo(() => ({ rough: p.materials.find(m => m.name === mat)?.roughness ?? 0.15, tC: p.design.tIntVerano, p: p.design.presion }), [p.materials, mat, p.design]);
+  const circS = p.circSizes ?? R20_SERIES; const ovalT = p.ovalSizes ?? provisionalOval(); const provisional = !p.ovalSizes;
+  const A = valid ? requiredArea(Q, V) : 0;
+  const circ = useMemo(() => valid ? circularOptions(Q, V, circS, ctx) : [], [Q, V, circS, ctx, valid]);
+  const rect = useMemo(() => valid ? rectOptions(Q, V, ctx, { min: parseNum(rmin) ?? 100, maxH: parseNum(rmax) ?? 1000, stepH: Math.max(5, parseNum(rstep) ?? 50), mode, fixH: parseNum(fixH), fixW: parseNum(fixW), maxRatio: parseNum(rratio) ?? 6 }) : [], [Q, V, ctx, rmin, rmax, rstep, rratio, mode, fixH, fixW, valid]);
+  const oval = useMemo(() => valid ? ovalOptions(Q, V, ovalT, ctx, { maxMinor: parseNum(omax), maxRatio: parseNum(rratio) ?? 6, mode }) : [], [Q, V, ovalT, ctx, omax, rratio, mode, valid]);
+  const num = (val: string, set: (s: string) => void) => <Input value={val} onChange={(_, x) => set(x.value)} />;
+  const ovalRows = useMemo(() => ovalT.map((t, i) => ({ ...t, uid: String(i) })), [ovalT]);
+  const ovalCols: ColDef[] = [numCol('minor', 'Eje menor (mm)', { d: 0, flex: 1 }), numCol('major', 'Eje mayor (mm)', { d: 0, flex: 1 })];
+  const best = (r: Opt[]) => r.find(x => x.best);
+  const bc = best(circ), br = best(rect), bo = best(oval);
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12, height: '100%', overflow: 'auto' }}>
+      <Card>
+        <Title3>Dimensionado rápido — medidas interiores</Title3>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(190px,1fr))', gap: 12 }}>
+          <Field label="Caudal (m³/h)">{num(q, setQ)}</Field>
+          <Field label="Velocidad (m/s)">{num(v, setV)}</Field>
+          <Field label="Material (para ΔP)"><Dropdown value={mat} selectedOptions={[mat]} onOptionSelect={(_, o) => setMat(o.optionValue as string)}>{p.materials.map(m => <Option key={m.name} value={m.name}>{m.name}</Option>)}</Dropdown></Field>
+          <Field label="Criterio de redondeo"><Dropdown value={mode === 'exceso' ? 'Sin superar la velocidad' : 'Medida más próxima'} selectedOptions={[mode]} onOptionSelect={(_, o) => setMode(o.optionValue as any)}>
+            <Option value="exceso">Sin superar la velocidad</Option><Option value="proximo">Medida más próxima</Option></Dropdown></Field>
+        </div>
+        {valid && <Text>Área necesaria: <b>{f(A, 4)} m²</b> · Ø equivalente exacto: <b>{f(Math.sqrt((4 * A) / Math.PI) * 1000, 1)} mm</b></Text>}
+        {valid && <Text size={200} style={{ color: '#424242' }}>
+          Recomendado → Circular: <b>{bc ? `Ø ${bc.d}` : '—'}</b> · Rectangular (más próximo): <b>{br ? `${br.a} × ${br.b}` : '—'}</b> · Oval (más próximo): <b>{bo ? `${bo.a} × ${bo.b}` : '—'}</b></Text>}
+      </Card>
+      <TabList selectedValue={tab} onTabSelect={(_, d) => setTab(d.value as string)}>
+        <Tab value="circ">Circular (Ø normalizados)</Tab><Tab value="rect">Rectangular (múltiplos de 5)</Tab><Tab value="oval">Oval plano (normalizados)</Tab><Tab value="tablas">Tablas normalizadas</Tab>
+      </TabList>
+      {tab === 'circ' && <Card><Subtitle2>Diámetros interiores normalizados</Subtitle2><Result rows={circ} kind="circ" vt={V} /></Card>}
+      {tab === 'rect' && <Card><Subtitle2>Rectangular — ambos lados terminados en 0 o 5</Subtitle2>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))', gap: 10 }}>
+          <Field label="Alto fijo (mm, opc.)">{num(fixH, setFixH)}</Field><Field label="Ancho fijo (mm, opc.)">{num(fixW, setFixW)}</Field>
+          <Field label="Alto mín. (mm)">{num(rmin, setRmin)}</Field><Field label="Alto máx. (mm)">{num(rmax, setRmax)}</Field>
+          <Field label="Paso de alto (mm)">{num(rstep, setRstep)}</Field><Field label="Relación máx.">{num(rratio, setRratio)}</Field></div>
+        <Result rows={rect} kind="dim" vt={V} /></Card>}
+      {tab === 'oval' && <Card><Subtitle2>Oval plano — menor eje a cada medida normalizada</Subtitle2>
+        {provisional && <MessageBar intent="warning"><MessageBarBody>Tabla PROVISIONAL (eje menor R20 × eje mayor en pasos de 50). Sustitúyela por la del fabricante en «Tablas normalizadas».</MessageBarBody></MessageBar>}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))', gap: 10 }}>
+          <Field label="Eje menor máx. (mm, opc.)">{num(omax, setOmax)}</Field><Field label="Relación máx. mayor/menor">{num(rratio, setRratio)}</Field></div>
+        <Result rows={oval} kind="dim" vt={V} />
+        <Text size={200} style={{ color: '#616161' }}>Área oval plano = π·b²/4 + b·(a − b), con b = eje menor y a = eje mayor.</Text></Card>}
+      {tab === 'tablas' && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 16, minHeight: 440 }}>
+          <Card><Subtitle2>Diámetros circulares (mm)</Subtitle2>
+            <Textarea rows={6} value={circS.join(', ')} onChange={(_, x) => { const a = x.value.split(/[\s,;]+/).map(s => parseFloat(s.replace(',', '.'))).filter(n => n > 0); if (a.length) setTables({ circSizes: a }); }} />
+            <Button onClick={() => setTables({ circSizes: R20_SERIES })}>Restaurar serie ISO R20 (63–2000)</Button></Card>
+          <Card style={{ minHeight: 0 }}><Subtitle2>Oval plano — tabla normalizada ({ovalT.length} medidas)</Subtitle2>
+            <Textarea rows={3} placeholder="Pega aquí desde Excel: eje menor ⇥ eje mayor (una medida por línea)" value={paste} onChange={(_, x) => setPaste(x.value)} />
+            <div style={{ display: 'flex', gap: 8 }}>
+              <Button appearance="primary" disabled={!parseOvalTable(paste).length} onClick={() => { setTables({ ovalSizes: parseOvalTable(paste) }); setPaste(''); }}>Reemplazar tabla con lo pegado</Button>
+              <Button disabled={!parseOvalTable(paste).length} onClick={() => { setTables({ ovalSizes: [...ovalT, ...parseOvalTable(paste)] }); setPaste(''); }}>Añadir lo pegado</Button></div>
+            <div style={{ height: 260 }}>
+              <DataGrid rows={ovalRows} columns={ovalCols} selectedId={sel} onSelect={setSel} message={`${ovalT.length} filas`}
+                onChange={(id, fld, val) => setTables({ ovalSizes: ovalT.map((t, i) => String(i) === id ? { ...t, [fld]: val } : t) })}
+                onAdd={() => setTables({ ovalSizes: [...ovalT, { minor: 100, major: 200 }] })}
+                onRemove={id => setTables({ ovalSizes: ovalT.filter((_, i) => String(i) !== id) })} /></div></Card>
+        </div>)}
+    </div>
+  );
+}

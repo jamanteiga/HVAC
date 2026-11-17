@@ -25,9 +25,10 @@ describe('fricción', () => {
 describe('geometría', () => {
   it('Dh circular = d', () => expect(hydraulicDiameter({ shape: 'Circular', d: 300 })).toBeCloseTo(0.3));
   it('Dh rect 400x200 = 2ab/(a+b)', () => expect(hydraulicDiameter({ shape: 'Rectangular', a: 200, b: 400 })).toBeCloseTo(0.26667, 4));
-  it('Dh oval círculo degenerado = d (corrección vs Excel que daba d/2)', () => expect(hydraulicDiameter({ shape: 'Oval', a: 300, b: 300 })).toBeCloseTo(0.3, 5));
+  it('Dh oval círculo degenerado = d', () => expect(hydraulicDiameter({ shape: 'Oval', a: 300, b: 300 })).toBeCloseTo(0.3, 5));
   it('De Huebscher 400x200', () => expect(equivalentDiameter({ shape: 'Rectangular', a: 200, b: 400 })).toBeCloseTo(0.30467, 4));
-  it('área oval', () => expect(area({ shape: 'Oval', a: 200, b: 400 })).toBeCloseTo(Math.PI / 4 * 0.08, 6));
+  it('área oval plano 400x200 = πb²/4 + b(a−b)', () => expect(area({ shape: 'Oval', a: 400, b: 200 })).toBeCloseTo((Math.PI * 200 * 200 / 4 + 200 * 200) / 1e6, 8));
+  it('De oval plano degenerado = d', () => expect(equivalentDiameter({ shape: 'Oval', a: 300, b: 300 })).toBeCloseTo(0.3, 3));
 });
 describe('dimensionado', () => {
   it('fricción igual cumple el objetivo (circular)', () => {
@@ -89,4 +90,26 @@ describe('conductos y rejillas', () => {
     const g = { uid: 'g', nr: 1, sws: 510, idRejilla: 'ER1', descripcion: '', caudal: 3600, mfr: 'Munters' as const, partNo: '', area: 0.5, velReq: 2, alto: 500, ancho: 500 };
     expect(calcGrille(g).velReal).toBeCloseTo(4, 6); expect(calcGrille(g).state).toBe('high');
   });
+});
+import { circularOptions, rectOptions, ovalOptions, provisionalOval, R20_SERIES, parseOvalTable } from '../engine/quick';
+describe('dimensionado rápido', () => {
+  const ctx = { rough: 0.15, tC: 24 };
+  it('circular: recomendado cumple v ≤ objetivo y el anterior no', () => {
+    const o = circularOptions(3600, 8, R20_SERIES, ctx); const rec = o.find(x => x.best)!;
+    expect(rec.v).toBeLessThanOrEqual(8); const k = o.indexOf(rec); expect(o[k - 1].v).toBeGreaterThan(8);
+  });
+  it('rectangular: lados múltiplos de 5 y v ≤ objetivo (exceso)', () => {
+    const o = rectOptions(3600, 8, ctx, { min: 100, maxH: 600, stepH: 50, mode: 'exceso', maxRatio: 6 });
+    expect(o.length).toBeGreaterThan(3);
+    for (const r of o) { expect(r.a! % 5).toBe(0); expect(r.b! % 5).toBe(0); expect(r.v).toBeLessThanOrEqual(8 + 1e-9); }
+  });
+  it('rectangular: altura fija 200', () => {
+    const o = rectOptions(3600, 8, ctx, { min: 100, maxH: 600, stepH: 50, mode: 'exceso', maxRatio: 6, fixH: 200 });
+    expect(o[0].a).toBe(200); expect(o[0].b! % 5).toBe(0); expect(o[0].v).toBeLessThanOrEqual(8);
+  });
+  it('oval: usa la tabla y cumple velocidad', () => {
+    const o = ovalOptions(3600, 8, provisionalOval(), ctx, { maxRatio: 6, mode: 'exceso' });
+    expect(o.length).toBeGreaterThan(0); for (const r of o) expect(r.v).toBeLessThanOrEqual(8 + 1e-9);
+  });
+  it('parsea tabla pegada', () => expect(parseOvalTable('100 x 200\n150;300\n250\t500,5')).toEqual([{ minor: 100, major: 200 }, { minor: 150, major: 300 }, { minor: 250, major: 500.5 }]));
 });

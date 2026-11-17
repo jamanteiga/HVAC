@@ -65,10 +65,21 @@ export function sizeDuct(inp: SizeInput): SizeResult {
   if (inp.method === 'friccion') {
     Dcirc = circForFriction(q, inp.frictionTarget ?? 1, inp.roughness, inp.tC, inp.pPa);
     A = (Math.PI / 4) * (Dcirc / 1000) ** 2;
-    if (shape !== 'Circular') {
+    if (shape === 'Rectangular') {
       // misma fricción: usar diámetro equivalente (Huebscher)
       const { H, W } = fromEquivalent(Dcirc, ratio);
       return sizeFromHW(inp, H, W);
+    }
+    if (shape === 'Oval') {
+      // bisección sobre el eje menor (oval plano, a = ratio·b) hasta la pérdida objetivo
+      let lo = 20, hi = 4000;
+      for (let i = 0; i < 100; i++) {
+        const mid = (lo + hi) / 2;
+        const dp = unitLoss(q, { shape: 'Oval', a: mid * ratio, b: mid }, inp.roughness, inp.tC, inp.pPa).dp;
+        if (dp > (inp.frictionTarget ?? 1)) lo = mid; else hi = mid;
+      }
+      const b = (lo + hi) / 2;
+      return sizeFromHW(inp, b, b * ratio);
     }
   } else if (inp.method === 'velocidad') {
     A = q / 3600 / (inp.velTarget ?? 8);
@@ -94,8 +105,8 @@ export function sizeDuct(inp: SizeInput): SizeResult {
     let H = Math.sqrt((A * 1e6) / ratio), W = H * ratio;
     return sizeFromHW(inp, H, W, true, note);
   }
-  // Oval (elipse): A = π/4·a·b
-  const H = Math.sqrt((4 * A * 1e6) / (Math.PI * ratio));
+  // Oval plano: A = b²(π/4 + r − 1), a = r·b
+  const H = Math.sqrt((A * 1e6) / (Math.PI / 4 + ratio - 1));
   return sizeFromHW(inp, H, H * ratio, true, note);
 }
 

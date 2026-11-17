@@ -75,5 +75,7 @@ export interface Project {
   losses: LossRow[];
   accessories: Accessory[];
   materials: Material[];
+  ovalSizes?: { minor: number; major: number }[]; // undefined = tabla provisional
+  circSizes?: number[];
   updatedAt: number;
 }

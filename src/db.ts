@@ -59,7 +59,7 @@ export const firebaseRepo: Repo = {
   async load(id) {
     const { auth, db } = fb(); const base = ['users', auth.currentUser!.uid, 'projects', id] as const;
     const head = await getDoc(doc(db, ...base)); if (!head.exists()) return null;
-    const h = head.data() as any; const out: any = { id, design: h.design, accessories: h.accessories, materials: h.materials, updatedAt: h.updatedAt };
+    const h = head.data() as any; const out: any = { id, design: h.design, accessories: h.accessories, materials: h.materials, ovalSizes: h.ovalSizes ?? undefined, circSizes: h.circSizes ?? undefined, updatedAt: h.updatedAt };
     for (const s of SUBS) {
       const q = await getDocs(collection(db, ...base, s));
       out[s] = q.docs.map(d => d.data()).sort((a: any, b: any) => a._i - b._i).map(({ _i, ...r }: any) => r);
@@ -69,7 +69,7 @@ export const firebaseRepo: Repo = {
   async save(p) {
     const { auth, db } = fb(); const uidU = auth.currentUser!.uid; const base = ['users', uidU, 'projects', p.id] as const;
     const now = Date.now(); const c = clean(p);
-    await setDoc(doc(db, ...base), { meta: meta({ ...c, updatedAt: now }), design: c.design, accessories: c.accessories, materials: c.materials, updatedAt: now });
+    await setDoc(doc(db, ...base), { meta: meta({ ...c, updatedAt: now }), design: c.design, accessories: c.accessories, materials: c.materials, ovalSizes: c.ovalSizes ?? null, circSizes: c.circSizes ?? null, updatedAt: now });
     for (const s of SUBS) {
       const existing = await getDocs(collection(db, ...base, s));
       const keep = new Set((c[s] as any[]).map(r => r.uid));
