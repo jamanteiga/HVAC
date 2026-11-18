@@ -4,7 +4,7 @@ import { ColDef } from 'ag-grid-community';
 import { useStore } from '../store';
 import { DataGrid, numCol, parseNum } from './DataGrid';
 import { defaultLocales } from '../engine/defaults';
-import { circularOptions, rectOptions, rectCheck, circCheck, ovalOptions, provisionalOval, R20_SERIES, SPIRO_SERIES, spiroThickness, CRITERIOS_VEL, requiredArea, parseOvalTable, Opt } from '../engine/quick';
+import { circularOptions, rectOptions, rectCheck, circCheck, ovalOptions, provisionalOval, R20_SERIES, SPIRO_SERIES, SPIRO, spiroThickness, CRITERIOS_VEL, requiredArea, parseOvalTable, Opt } from '../engine/quick';
 
 const f = (v: number, d = 2) => v.toLocaleString('es-ES', { minimumFractionDigits: d, maximumFractionDigits: d });
 const th: React.CSSProperties = { textAlign: 'left', padding: '6px 12px', background: 'var(--hdr)', borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap' };
@@ -38,7 +38,7 @@ export function Module5() {
   const [q, setQ] = useState('3600'); const [v, setV] = useState('8'); const [loc, setLoc] = useState(''); const [mat, setMat] = useState('Acero galvanizado');
   const [crit, setCrit] = useState(''); const [mode, setMode] = useState<'exceso' | 'proximo'>('exceso'); const [tab, setTab] = useState('circ');
   const [rratio, setRratio] = useState('2'); const [oratio, setOratio] = useState('6');
-  const [circD, setCircD] = useState(''); const [diagD, setDiagD] = useState(''); const [fixH, setFixH] = useState(''); const [fixW, setFixW] = useState('');
+  const [spD, setSpD] = useState(''); const [circD, setCircD] = useState(''); const [diagD, setDiagD] = useState(''); const [fixH, setFixH] = useState(''); const [fixW, setFixW] = useState('');
   const [omax, setOmax] = useState(''); const [paste, setPaste] = useState(''); const [sel, setSel] = useState<string | null>(null);
   const locales = p.design.locales ?? defaultLocales(); const L = locales.find(l => l.name === loc); const C = CRITERIOS_VEL.find(c => c.name === crit);
   const rng = C ? { name: C.name, min: C.vMin, max: C.vMax } : L ? { name: L.name, min: L.vMin, max: L.vMax } : { name: '', min: 7, max: 10 };
@@ -53,6 +53,9 @@ export function Module5() {
   const DD = parseNum(diagD) ?? 0; const dReq = valid ? Math.sqrt((4 * A) / Math.PI) * 1000 : 0;
   const dBg = (d: number) => DD > 0 ? (d > DD + 1e-9 ? RED : GRN) : undefined; // verde si ≤ Ø del diagrama, rojo si lo supera
   const cD = parseNum(circD) ?? 0; const cchk = valid && cD > 0 ? circCheck(Q, V, ctx, cD) : null;
+  const spRows = useMemo(() => valid ? SPIRO.map(x => ({ ...circCheck(Q, V, ctx, x.di), e: x.e })) : [], [Q, V, ctx, valid]);
+  const spBest = spRows.findIndex(r => r.v <= V * (1 + 1e-9));
+  const spSel = spRows.find(r => String(r.d) === spD) ?? null;
   const chk = valid && both ? rectCheck(Q, V, ctx, hN, wN, 3.5) : null;
   const rect = useMemo(() => valid ? rectOptions(Q, V, ctx, { min: 100, maxH: 1000, stepH: 50, mode, fixH: both ? null : parseNum(fixH), fixW: both ? null : parseNum(fixW), maxRatio: RR }) : [], [Q, V, ctx, rratio, mode, fixH, fixW, both, valid]);
   const oval = useMemo(() => valid ? ovalOptions(Q, V, ovalT, ctx, { maxMinor: parseNum(omax), maxRatio: parseNum(oratio) ?? 6, mode }) : [], [Q, V, ovalT, ctx, omax, oratio, mode, valid]);
@@ -90,7 +93,7 @@ export function Module5() {
           <tbody>{[7, 8, 9, 10].map(x => { const c = circularOptions(Q, x, circS, ctx).find(o => o.best); const r = rectOptions(Q, x, ctx, { min: 100, maxH: 1000, stepH: 50, mode, maxRatio: RR }).find(o => o.best); const o = ovalOptions(Q, x, ovalT, ctx, { maxMinor: parseNum(omax), maxRatio: parseNum(oratio) ?? 6, mode }).find(z => z.best);
             return <tr key={x} style={{ background: x === V ? 'var(--best)' : undefined }}><td style={td}>{x}</td><td style={td}>{f(requiredArea(Q, x), 4)}</td><td style={td}>{c ? `Ø ${c.d}` : '—'}</td><td style={td}>{r ? `${r.a} × ${r.b}` : '—'}</td><td style={td}>{o ? `${o.a} × ${o.b}` : '—'}</td></tr>; })}</tbody></table></Card>}
       <TabList selectedValue={tab} onTabSelect={(_, d) => setTab(d.value as string)}>
-        <Tab value="circ">Circular (Ø normalizados)</Tab><Tab value="rect">Rectangular (múltiplos de 5)</Tab><Tab value="oval">Oval plano (normalizados)</Tab><Tab value="tablas">Tablas normalizadas</Tab>
+        <Tab value="circ">Circular (Ø normalizados)</Tab><Tab value="espiro">Espiro (Spiroduct)</Tab><Tab value="rect">Rectangular (múltiplos de 5)</Tab><Tab value="oval">Oval plano (normalizados)</Tab><Tab value="tablas">Tablas normalizadas</Tab>
       </TabList>
       {tab === 'circ' && <Card><Subtitle2>Diámetros interiores normalizados</Subtitle2>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(190px,1fr))', gap: 10 }}><Field label="Diámetro interior manual (mm, opc.)">{num(circD, setCircD)}</Field></div>
@@ -100,6 +103,18 @@ export function Module5() {
             <td style={{ ...td, color: cchk.v > rng.max + 1e-9 || cchk.v < rng.min - 1e-9 ? 'var(--over)' : undefined }}>{f(cchk.v)}</td><td style={td}>{f(cchk.dp, 3)}</td><td style={td}>{cchk.label}</td></tr></tbody></table></div>}
         {cchk && <Subtitle2>Normalizados</Subtitle2>}
         <Result rows={circ} kind="circ" vt={V} /></Card>}
+      {tab === 'espiro' && <Card><Subtitle2>Conducto espiro Spiroduct — acero galvanizado</Subtitle2>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(190px,1fr))', gap: 10 }}>
+          <Field label="Diámetro interior (lista normalizada)"><Dropdown value={spD ? `Ø ${spD}` : '— elegir —'} selectedOptions={[spD]} onOptionSelect={(_, o) => setSpD((o.optionValue as string) ?? '')}>
+            <Option value="">— elegir —</Option>{SPIRO.map(x => <Option key={x.di} value={String(x.di)}>{`Ø ${x.di}`}</Option>)}</Dropdown></Field></div>
+        {spSel && <Text style={{ background: 'var(--best)', padding: '6px 10px', borderRadius: 4, width: 'fit-content', fontWeight: 600 }}>Ø {spSel.d} · espesor {String(spSel.e).replace('.', ',')} mm · área {f(spSel.area, 4)} m² · v real <span style={{ color: spSel.v > rng.max + 1e-9 || spSel.v < rng.min - 1e-9 ? 'var(--over)' : undefined }}>{f(spSel.v)} m/s</span> · ΔP {f(spSel.dp, 3)} Pa/m</Text>}
+        {!valid ? <MessageBar intent="warning"><MessageBarBody>Introduce caudal y velocidad.</MessageBarBody></MessageBar> : <div style={{ overflow: 'auto' }}><table style={{ borderCollapse: 'collapse', fontSize: 13, width: '100%' }}>
+          <thead><tr><th style={th}>Ø interior (mm)</th><th style={th}>Espesor e (mm)</th><th style={th}>Área (m²)</th><th style={th}>v real (m/s)</th><th style={th}>Desv. vs objetivo</th><th style={th}>ΔP (Pa/m)</th><th style={th}>Nota</th></tr></thead>
+          <tbody>{spRows.map((r, i) => (<tr key={i} style={{ background: i === spBest ? 'var(--best)' : String(r.d) === spD ? 'var(--hdr)' : undefined, fontWeight: i === spBest ? 600 : 400 }}>
+            <td style={td}>Ø {r.d}</td><td style={td}>{String(r.e).replace('.', ',')}</td><td style={td}>{f(r.area, 4)}</td>
+            <td style={{ ...td, color: r.v > V * 1.0000001 ? 'var(--over)' : undefined }}>{f(r.v)}</td><td style={td}>{r.dev >= 0 ? '+' : ''}{f(r.dev * 100, 1)} %</td><td style={td}>{f(r.dp, 3)}</td><td style={td}>{i === spBest ? 'Recomendado (v ≤ objetivo)' : ''}</td></tr>))}</tbody></table>
+          {spBest < 0 && <MessageBar intent="warning"><MessageBarBody>Ningún Spiroduct de la tabla (hasta Ø315) cumple la velocidad con este caudal; usa el circular normalizado.</MessageBarBody></MessageBar>}</div>}
+      </Card>}
       {tab === 'rect' && <Card><Subtitle2>Rectangular — ambos lados terminados en 0 o 5</Subtitle2>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))', gap: 10 }}>
           <Field label="Ø hidráulico del diagrama (mm)">{num(diagD, setDiagD)}</Field>
