@@ -178,3 +178,11 @@ describe('Ø equivalente por igualdad de pérdida (Darcy-Weisbach)', () => {
     expect(Math.abs(c - r) / r).toBeLessThan(1e-6); expect(d).toBeGreaterThan(290); expect(d).toBeLessThan(320);
   });
 });
+
+describe('Rectangular de 50 en 50 desde medida inicial', () => {
+  it('lados = 110 + 50k', () => {
+    const o = rectOptions(2414, 10, { rough: 0.15, tC: 24 }, { series: { start: 110, step: 50 }, min: 100, maxH: 1000, stepH: 50, mode: 'exceso', maxRatio: 3.5 });
+    expect(o.length).toBeGreaterThan(0);
+    for (const r of o) { expect((r.a! - 110) % 50).toBe(0); expect((r.b! - 110) % 50).toBe(0); expect(r.v).toBeLessThanOrEqual(10 + 1e-9); }
+  });
+});

@@ -40,7 +40,7 @@ export function Module5() {
   const [rratio, setRratio] = useState('2'); const [oratio, setOratio] = useState('6');
   const [spD, setSpD] = useState(''); const [circD, setCircD] = useState('');  // Ø del diagrama: único para todos los tipos de conducto
   const [diagD, setDiagD] = useState('');
-  const [fixH, setFixH] = useState(''); const [fixW, setFixW] = useState('');
+  const [rstart, setRstart] = useState('100'); const [fixH, setFixH] = useState(''); const [fixW, setFixW] = useState('');
   const [omax, setOmax] = useState(''); const [paste, setPaste] = useState(''); const [sel, setSel] = useState<string | null>(null);
   const locales = p.design.locales ?? defaultLocales(); const L = locales.find(l => l.name === loc); const C = CRITERIOS_VEL.find(c => c.name === crit);
   const rng = C ? { name: C.name, min: C.vMin, max: C.vMax } : L ? { name: L.name, min: L.vMin, max: L.vMax } : { name: '', min: 7, max: 10 };
@@ -52,6 +52,7 @@ export function Module5() {
   const A = valid ? requiredArea(Q, V) : 0;
   const circ = useMemo(() => valid ? circularOptions(Q, V, circS, ctx) : [], [Q, V, circS, ctx, valid]);
   const hN = parseNum(fixH) ?? 0, wN = parseNum(fixW) ?? 0; const both = hN > 0 && wN > 0;
+  const RS = Math.max(50, parseNum(rstart) ?? 100); const series = { start: RS, step: 50 };
   const DD = parseNum(diagD) ?? 0; const dReq = valid ? Math.sqrt((4 * A) / Math.PI) * 1000 : 0;
   const bgFor = (dd: number) => (d: number) => dd > 0 ? (d > dd + 1e-9 ? RED : GRN) : undefined; // verde si ≤ Ø del diagrama, rojo si lo supera
   const DC = DD, DS = DD; const dBg = bgFor(DD), dBgC = bgFor(DC), dBgS = bgFor(DS);
@@ -63,7 +64,7 @@ export function Module5() {
   const reqLine = reqLineFor(DD, dBg);
   const deqR = valid && both ? deDarcy(Q, hN, wN, ctx) : 0;
   const chk = valid && both ? rectCheck(Q, V, ctx, hN, wN, 3.5) : null;
-  const rect = useMemo(() => valid ? rectOptions(Q, V, ctx, { min: 100, maxH: 1000, stepH: 50, mode, fixH: both ? null : parseNum(fixH), fixW: both ? null : parseNum(fixW), maxRatio: RR }) : [], [Q, V, ctx, rratio, mode, fixH, fixW, both, valid]);
+  const rect = useMemo(() => valid ? rectOptions(Q, V, ctx, { series, min: 100, maxH: 1000, stepH: 50, mode, fixH: both ? null : parseNum(fixH), fixW: both ? null : parseNum(fixW), maxRatio: RR }) : [], [Q, V, ctx, rratio, mode, fixH, fixW, both, valid, RS]);
   const oval = useMemo(() => valid ? ovalOptions(Q, V, ovalT, ctx, { maxMinor: parseNum(omax), maxRatio: parseNum(oratio) ?? 6, mode }) : [], [Q, V, ovalT, ctx, omax, oratio, mode, valid]);
   const num = (val: string, set: (s: string) => void) => <Input value={val} onChange={(_, x) => set(x.value)} />;
   const ovalRows = useMemo(() => ovalT.map((t, i) => ({ ...t, uid: String(i) })), [ovalT]);
@@ -96,10 +97,10 @@ export function Module5() {
       </Card>
       {Q > 0 && <Card><Subtitle2>Comparativa 7 – 10 m/s (mismo caudal)</Subtitle2>
         <table style={{ borderCollapse: 'collapse', fontSize: 13 }}><thead><tr>{['v (m/s)', 'Área (m²)', 'Circular', 'Rectangular (más próx.)', 'Oval (más próx.)'].map(h => <th key={h} style={th}>{h}</th>)}</tr></thead>
-          <tbody>{[7, 8, 9, 10].map(x => { const c = circularOptions(Q, x, circS, ctx).find(o => o.best); const r = rectOptions(Q, x, ctx, { min: 100, maxH: 1000, stepH: 50, mode, maxRatio: RR }).find(o => o.best); const o = ovalOptions(Q, x, ovalT, ctx, { maxMinor: parseNum(omax), maxRatio: parseNum(oratio) ?? 6, mode }).find(z => z.best);
+          <tbody>{[7, 8, 9, 10].map(x => { const c = circularOptions(Q, x, circS, ctx).find(o => o.best); const r = rectOptions(Q, x, ctx, { series, min: 100, maxH: 1000, stepH: 50, mode, maxRatio: RR }).find(o => o.best); const o = ovalOptions(Q, x, ovalT, ctx, { maxMinor: parseNum(omax), maxRatio: parseNum(oratio) ?? 6, mode }).find(z => z.best);
             return <tr key={x} style={{ background: x === V ? 'var(--best)' : undefined }}><td style={td}>{x}</td><td style={td}>{f(requiredArea(Q, x), 4)}</td><td style={td}>{c ? `Ø ${c.d}` : '—'}</td><td style={td}>{r ? `${r.a} × ${r.b}` : '—'}</td><td style={td}>{o ? `${o.a} × ${o.b}` : '—'}</td></tr>; })}</tbody></table></Card>}
       <TabList selectedValue={tab} onTabSelect={(_, d) => setTab(d.value as string)}>
-        <Tab value="circ">Circular (Ø normalizados)</Tab><Tab value="espiro">Espiro (Spiroduct)</Tab><Tab value="rect">Rectangular (múltiplos de 5)</Tab><Tab value="oval">Oval plano (normalizados)</Tab><Tab value="tablas">Tablas normalizadas</Tab>
+        <Tab value="circ">Circular (Ø normalizados)</Tab><Tab value="espiro">Espiro (Spiroduct)</Tab><Tab value="rect">Rectangular (de 50 en 50)</Tab><Tab value="oval">Oval plano (normalizados)</Tab><Tab value="tablas">Tablas normalizadas</Tab>
       </TabList>
       {tab === 'circ' && <Card><Subtitle2>Diámetros interiores normalizados</Subtitle2>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(190px,1fr))', gap: 10 }}><Field label="Ø del diagrama (mm)">{num(diagD, setDiagD)}</Field><Field label="Diámetro interior manual (mm, opc.)">{num(circD, setCircD)}</Field></div>
@@ -123,9 +124,10 @@ export function Module5() {
             <td style={{ ...td, color: r.v > V * 1.0000001 ? 'var(--over)' : undefined }}>{f(r.v)}</td><td style={td}>{r.dev >= 0 ? '+' : ''}{f(r.dev * 100, 1)} %</td><td style={td}>{f(r.dp, 3)}</td><td style={td}>{i === spBest ? 'Recomendado (v ≤ objetivo)' : ''}</td></tr>))}</tbody></table>
           {spBest < 0 && <MessageBar intent="warning"><MessageBarBody>Ningún Spiroduct de la tabla (hasta Ø315) cumple la velocidad con este caudal; usa el circular normalizado.</MessageBarBody></MessageBar>}</div>}
       </Card>}
-      {tab === 'rect' && <Card><Subtitle2>Rectangular — ambos lados terminados en 0 o 5</Subtitle2>
+      {tab === 'rect' && <Card><Subtitle2>Rectangular — lados de 50 en 50 desde la medida inicial</Subtitle2>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))', gap: 10 }}>
           <Field label="Ø hidráulico del diagrama (mm)">{num(diagD, setDiagD)}</Field>
+          <Field label="Medida inicial (mm)">{num(rstart, setRstart)}</Field>
           <Field label="Alto (mm)">{num(fixH, setFixH)}</Field><Field label="Ancho (mm)">{num(fixW, setFixW)}</Field></div>
         <Text size={200} style={{ color: 'var(--subtle)' }}>Indica alto y ancho para calcular la velocidad con el caudal; con solo uno se calcula el otro lado; sin ninguno se muestran alternativas.</Text>
         {reqLine}

@@ -60,17 +60,20 @@ export function circularOptions(q: number, vt: number, series: number[], ctx: Ct
   return out;
 }
 
-export interface RectOpts { min: number; maxH: number; stepH: number; mode: 'exceso' | 'proximo'; fixH?: number | null; fixW?: number | null; maxRatio: number }
+export interface RectOpts { series?: { start: number; step: number }; min: number; maxH: number; stepH: number; mode: 'exceso' | 'proximo'; fixH?: number | null; fixW?: number | null; maxRatio: number }
 /** Rectangulares con lados múltiplos de 5 mm. */
 export function rectOptions(q: number, vt: number, ctx: Ctx, o: RectOpts): Opt[] {
   const A = requiredArea(q, vt) * 1e6; // mm²
-  const rnd = o.mode === 'exceso' ? ceil5 : round5;
+  const sr = o.series;
+  const rnd = sr
+    ? (x: number) => (x <= sr.start ? sr.start : sr.start + (o.mode === 'exceso' ? Math.ceil((x - sr.start) / sr.step - 1e-9) : Math.round((x - sr.start) / sr.step)) * sr.step)
+    : o.mode === 'exceso' ? ceil5 : round5;
   const mkRect = (H: number, W: number, label = '') => { const r = mk('Rectangular', q, vt, ctx, { a: H, b: W }, (H * W) / 1e6); r.label = label; const ratio = Math.max(H, W) / Math.min(H, W); r.extra = `${ratio.toFixed(2)}:1`; if (label && ratio > o.maxRatio + 1e-9) r.label = `${label} · supera 1:${o.maxRatio}`; return r; };
   const out: Opt[] = [];
   if (o.fixH && o.fixH > 0) out.push(mkRect(o.fixH, Math.max(5, rnd(A / o.fixH)), `Alto fijo ${o.fixH}`));
   if (o.fixW && o.fixW > 0) out.push(mkRect(Math.max(5, rnd(A / o.fixW)), o.fixW, `Ancho fijo ${o.fixW}`));
   const sweep: Opt[] = [];
-  for (let H = Math.max(5, o.min); H <= o.maxH + 1e-9; H += o.stepH) {
+  for (let H = sr ? sr.start : Math.max(5, o.min); H <= o.maxH + 1e-9; H += sr ? sr.step : o.stepH) {
     if (A / H < H - 1e-9 && sweep.length) break; // más allá de la sección cuadrada no hay alternativas útiles (H ≤ W)
     const W = Math.max(rnd(A / H), H); // H ≤ W
     if (W / H > o.maxRatio) continue;
