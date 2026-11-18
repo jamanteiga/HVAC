@@ -152,3 +152,10 @@ describe('fichero .json', () => {
   });
   it('rechaza ficheros que no son proyectos', () => expect(() => parseProject('{"a":1}')).toThrow());
 });
+
+import { spiroThickness, SPIRO_SERIES, CRITERIOS_VEL } from '../engine/quick';
+describe('Spiroduct y criterios', () => {
+  it('espesores de la tabla', () => { expect(spiroThickness(200)).toBe(0.5); expect(spiroThickness(224)).toBe(0.8); expect(spiroThickness(355)).toBeNull(); });
+  it('serie por defecto', () => { expect(SPIRO_SERIES.slice(0, 3)).toEqual([80, 100, 125]); expect(SPIRO_SERIES).toContain(300); expect(SPIRO_SERIES).not.toContain(90); expect(SPIRO_SERIES).toContain(355); });
+  it('7 criterios', () => expect(CRITERIOS_VEL.length).toBe(7));
+});

@@ -4,7 +4,7 @@ import { ColDef } from 'ag-grid-community';
 import { useStore } from '../store';
 import { DataGrid, numCol, parseNum } from './DataGrid';
 import { defaultLocales } from '../engine/defaults';
-import { circularOptions, rectOptions, rectCheck, ovalOptions, provisionalOval, R20_SERIES, requiredArea, parseOvalTable, Opt } from '../engine/quick';
+import { circularOptions, rectOptions, rectCheck, ovalOptions, provisionalOval, R20_SERIES, SPIRO_SERIES, spiroThickness, CRITERIOS_VEL, requiredArea, parseOvalTable, Opt } from '../engine/quick';
 
 const f = (v: number, d = 2) => v.toLocaleString('es-ES', { minimumFractionDigits: d, maximumFractionDigits: d });
 const th: React.CSSProperties = { textAlign: 'left', padding: '6px 12px', background: 'var(--hdr)', borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap' };
@@ -19,10 +19,11 @@ function Result({ rows, kind, vt, lim }: { rows: Opt[]; kind: 'circ' | 'dim'; vt
   return (
     <div style={{ overflow: 'auto' }}>
       <table style={{ borderCollapse: 'collapse', fontSize: 13, width: '100%' }}>
-        <thead><tr><th style={th}>{kind === 'circ' ? 'Ø interior (mm)' : 'Interior (mm)'}</th>{kind === 'dim' && <th style={th}>Relación</th>}<th style={th}>Área (m²)</th><th style={th}>v real (m/s)</th><th style={th}>Desv. vs objetivo</th><th style={th}>ΔP (Pa/m)</th><th style={th}>Nota</th></tr></thead>
+        <thead><tr><th style={th}>{kind === 'circ' ? 'Ø interior (mm)' : 'Interior (mm)'}</th>{kind === 'dim' && <th style={th}>Relación</th>}{kind === 'circ' && <th style={th}>Espesor e (mm)</th>}<th style={th}>Área (m²)</th><th style={th}>v real (m/s)</th><th style={th}>Desv. vs objetivo</th><th style={th}>ΔP (Pa/m)</th><th style={th}>Nota</th></tr></thead>
         <tbody>{rows.map((r, i) => (
           <tr key={i} style={{ background: r.best ? 'var(--best)' : undefined, fontWeight: r.best ? 600 : 400 }}>
             <td style={td}>{kind === 'circ' ? `Ø ${r.d}` : `${r.a} × ${r.b}`}</td>{kind === 'dim' && <td style={{ ...td, background: ratioBg(r.extra, lim) }}>{r.extra}</td>}
+            {kind === 'circ' && <td style={td}>{spiroThickness(r.d) ?? '—'}</td>}
             <td style={td}>{f(r.area, 4)}</td>
             <td style={{ ...td, color: r.v > vt * 1.0000001 ? 'var(--over)' : undefined }}>{f(r.v)}</td>
             <td style={td}>{r.dev >= 0 ? '+' : ''}{f(r.dev * 100, 1)} %</td><td style={td}>{f(r.dp, 3)}</td><td style={td}>{r.label}</td></tr>))}</tbody>
@@ -34,16 +35,17 @@ function Result({ rows, kind, vt, lim }: { rows: Opt[]; kind: 'circ' | 'dim'; vt
 export function Module5() {
   const { project: p, setTables } = useStore();
   const [q, setQ] = useState('3600'); const [v, setV] = useState('8'); const [loc, setLoc] = useState(''); const [mat, setMat] = useState('Acero galvanizado');
-  const [mode, setMode] = useState<'exceso' | 'proximo'>('exceso'); const [tab, setTab] = useState('circ');
+  const [crit, setCrit] = useState(''); const [mode, setMode] = useState<'exceso' | 'proximo'>('exceso'); const [tab, setTab] = useState('circ');
   const [rratio, setRratio] = useState('2'); const [oratio, setOratio] = useState('6');
   const [fixH, setFixH] = useState(''); const [fixW, setFixW] = useState('');
   const [omax, setOmax] = useState(''); const [paste, setPaste] = useState(''); const [sel, setSel] = useState<string | null>(null);
-  const locales = p.design.locales ?? defaultLocales(); const L = locales.find(l => l.name === loc);
+  const locales = p.design.locales ?? defaultLocales(); const L = locales.find(l => l.name === loc); const C = CRITERIOS_VEL.find(c => c.name === crit);
+  const rng = C ? { name: C.name, min: C.vMin, max: C.vMax } : L ? { name: L.name, min: L.vMin, max: L.vMax } : { name: '', min: 7, max: 10 };
   const Q = parseNum(q) ?? 0, V = parseNum(v) ?? 0;
   const rRaw = parseNum(rratio); const RR = Math.min(rRaw && rRaw >= 1 ? rRaw : 2, 3.5); const rOver = !!rRaw && rRaw > 3.5;
   const valid = Q > 0 && V > 0;
   const ctx = useMemo(() => ({ rough: p.materials.find(m => m.name === mat)?.roughness ?? 0.15, tC: p.design.tIntVerano, p: p.design.presion }), [p.materials, mat, p.design]);
-  const circS = p.circSizes ?? R20_SERIES; const ovalT = p.ovalSizes ?? provisionalOval(); const provisional = !p.ovalSizes;
+  const circS = p.circSizes ?? SPIRO_SERIES; const ovalT = p.ovalSizes ?? provisionalOval(); const provisional = !p.ovalSizes;
   const A = valid ? requiredArea(Q, V) : 0;
   const circ = useMemo(() => valid ? circularOptions(Q, V, circS, ctx) : [], [Q, V, circS, ctx, valid]);
   const hN = parseNum(fixH) ?? 0, wN = parseNum(fixW) ?? 0; const both = hN > 0 && wN > 0;
@@ -63,16 +65,17 @@ export function Module5() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(190px,1fr))', gap: 12 }}>
           <Field label="Caudal (m³/h)">{num(q, setQ)}</Field>
           <Field label="Relación máx. rectangular (1:x)" validationState={rOver ? 'warning' : 'none'} validationMessage={rOver ? 'Máximo 1:3,5 (se aplica 3,5)' : undefined}>{num(rratio, setRratio)}</Field>
-          <Field label="Local (velocidad de diseño)"><Dropdown value={loc || '— libre —'} selectedOptions={[loc]} onOptionSelect={(_, o) => { const n = (o.optionValue as string) ?? ''; setLoc(n); const l = locales.find(x => x.name === n); if (l) setV(String(l.vTarget)); }}>
+          <Field label="Local (velocidad de diseño)"><Dropdown value={loc || '— libre —'} selectedOptions={[loc]} onOptionSelect={(_, o) => { const n = (o.optionValue as string) ?? ''; setLoc(n); setCrit(''); const l = locales.find(x => x.name === n); if (l) setV(String(l.vTarget)); }}>
             <Option value="">— libre —</Option>{locales.map(l => <Option key={l.name} value={l.name}>{l.name}</Option>)}</Dropdown></Field>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}><Field label="Velocidad (m/s) — rango 7 a 10">{num(v, setV)}</Field>
+          <Field label="Criterio de velocidad (5.4.0.1)"><Dropdown value={crit || '— ninguno —'} selectedOptions={[crit]} onOptionSelect={(_, o) => { const n = (o.optionValue as string) ?? ''; setCrit(n); const c = CRITERIOS_VEL.find(x => x.name === n); if (c) { setV(String(c.vTarget)); setLoc(''); } }}>
+            <Option value="">— ninguno —</Option>{CRITERIOS_VEL.map(c => <Option key={c.name} value={c.name}>{c.name}</Option>)}</Dropdown></Field>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}><Field label="Velocidad (m/s)">{num(v, setV)}</Field>
             <div style={{ display: 'flex', gap: 4 }}>{[7, 8, 9, 10].map(x => <Button key={x} size="small" appearance={V === x ? 'primary' : 'secondary'} onClick={() => setV(String(x))}>{x}</Button>)}</div></div>
           <Field label="Material (para ΔP)"><Dropdown value={mat} selectedOptions={[mat]} onOptionSelect={(_, o) => setMat(o.optionValue as string)}>{p.materials.map(m => <Option key={m.name} value={m.name}>{m.name}</Option>)}</Dropdown></Field>
           <Field label="Criterio de redondeo"><Dropdown value={mode === 'exceso' ? 'Sin superar la velocidad' : 'Medida más próxima'} selectedOptions={[mode]} onOptionSelect={(_, o) => setMode(o.optionValue as any)}>
             <Option value="exceso">Sin superar la velocidad</Option><Option value="proximo">Medida más próxima</Option></Dropdown></Field>
         </div>
-        {valid && (V < 7 || V > 10) && <MessageBar intent="warning"><MessageBarBody>La velocidad {f(V, 1)} m/s está fuera del rango de diseño 7–10 m/s.</MessageBarBody></MessageBar>}
-        {valid && L && (V < L.vMin || V > L.vMax) && <MessageBar intent="warning"><MessageBarBody>Para «{L.name}» el rango es {L.vMin}–{L.vMax} m/s.</MessageBarBody></MessageBar>}
+        {valid && (V < rng.min - 1e-9 || V > rng.max + 1e-9) && <MessageBar intent="warning"><MessageBarBody>{rng.name ? `Para «${rng.name}» el rango es ${rng.min > 0 ? `${rng.min}–` : 'máx. '}${rng.max} m/s.` : `La velocidad ${f(V, 1)} m/s está fuera del rango habitual 7–10 m/s.`}</MessageBarBody></MessageBar>}
         {L?.nbq && <Text size={200} style={{ color: 'var(--subtle)' }}>Local NBQ en sobrepresión de {L.overP} Pa respecto a la atmosférica (efecto despreciable en el dimensionado rápido).</Text>}
         {valid && <Text>Área necesaria: <b>{f(A, 4)} m²</b> · Ø equivalente exacto: <b>{f(Math.sqrt((4 * A) / Math.PI) * 1000, 1)} mm</b></Text>}
         {valid && <Text size={200} style={{ color: 'var(--text)' }}>
@@ -93,9 +96,9 @@ export function Module5() {
         {chk && <div style={{ overflow: 'auto' }}><table style={{ borderCollapse: 'collapse', fontSize: 13 }}>
           <thead><tr><th style={th}>Interior (mm)</th><th style={th}>Relación</th><th style={th}>Área (m²)</th><th style={th}>v real (m/s)</th><th style={th}>ΔP (Pa/m)</th><th style={th}>Nota</th></tr></thead>
           <tbody><tr style={{ background: 'var(--best)', fontWeight: 600 }}><td style={td}>{hN} × {wN}</td><td style={{ ...td, background: ratioBg(chk.extra, RR) }}>{chk.extra}</td><td style={td}>{f(chk.area, 4)}</td>
-            <td style={{ ...td, color: chk.v > 10 || chk.v < 7 ? 'var(--over)' : undefined }}>{f(chk.v)}</td><td style={td}>{f(chk.dp, 3)}</td><td style={td}>{chk.label}</td></tr></tbody></table></div>}
+            <td style={{ ...td, color: chk.v > rng.max + 1e-9 || chk.v < rng.min - 1e-9 ? 'var(--over)' : undefined }}>{f(chk.v)}</td><td style={td}>{f(chk.dp, 3)}</td><td style={td}>{chk.label}</td></tr></tbody></table></div>}
         {chk && ratioBg(chk.extra, RR) && <MessageBar intent={ratioBg(chk.extra, RR) === RED ? 'error' : 'warning'}><MessageBarBody>{ratioBg(chk.extra, RR) === RED ? 'La relación supera el límite 1:3,5.' : `La relación supera 1:${f(RR, 1)} (normal); el límite es 1:3,5.`}</MessageBarBody></MessageBar>}
-        {chk && (chk.v < 7 || chk.v > 10) && <MessageBar intent="warning"><MessageBarBody>La velocidad {f(chk.v, 1)} m/s queda fuera del rango 7–10 m/s.</MessageBarBody></MessageBar>}
+        {chk && (chk.v < rng.min - 1e-9 || chk.v > rng.max + 1e-9) && <MessageBar intent="warning"><MessageBarBody>La velocidad {f(chk.v, 1)} m/s queda fuera del rango {rng.min > 0 ? `${rng.min}–` : 'máx. '}{rng.max} m/s.</MessageBarBody></MessageBar>}
         {chk && <Subtitle2>Alternativas</Subtitle2>}
         <Result rows={rect} kind="dim" vt={V} lim={RR} /></Card>}
       {tab === 'oval' && <Card><Subtitle2>Oval plano — menor eje a cada medida normalizada</Subtitle2>
@@ -108,7 +111,7 @@ export function Module5() {
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 16, minHeight: 440 }}>
           <Card><Subtitle2>Diámetros circulares (mm)</Subtitle2>
             <Textarea rows={6} value={circS.join(', ')} onChange={(_, x) => { const a = x.value.split(/[\s,;]+/).map(s => parseFloat(s.replace(',', '.'))).filter(n => n > 0); if (a.length) setTables({ circSizes: a }); }} />
-            <Button onClick={() => setTables({ circSizes: R20_SERIES })}>Restaurar serie ISO R20 (63–2000)</Button></Card>
+            <Button onClick={() => setTables({ circSizes: SPIRO_SERIES })}>Restaurar tabla Spiroduct (80–315) + R20 desde 355</Button></Card>
           <Card style={{ minHeight: 0 }}><Subtitle2>Oval plano — tabla normalizada ({ovalT.length} medidas)</Subtitle2>
             <Textarea rows={3} placeholder="Pega aquí desde Excel: eje menor ⇥ eje mayor (una medida por línea)" value={paste} onChange={(_, x) => setPaste(x.value)} />
             <div style={{ display: 'flex', gap: 8 }}>

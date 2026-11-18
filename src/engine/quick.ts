@@ -4,6 +4,25 @@ import { unitLoss } from './sizing';
 
 export const R20_SERIES = [63, 71, 80, 90, 100, 112, 125, 140, 160, 180, 200, 224, 250, 280, 315, 355, 400, 450, 500, 560, 630, 710, 800, 900, 1000, 1120, 1250, 1400, 1600, 1800, 2000];
 
+/** Tubo espiral Spiroduct (acero galvanizado): Ø interior y espesor (mm). El código COPIC no se usa. */
+export const SPIRO: { di: number; e: number }[] = [
+  { di: 80, e: 0.5 }, { di: 100, e: 0.5 }, { di: 125, e: 0.5 }, { di: 160, e: 0.5 }, { di: 180, e: 0.5 }, { di: 200, e: 0.5 },
+  { di: 224, e: 0.8 }, { di: 250, e: 0.8 }, { di: 280, e: 0.8 }, { di: 300, e: 0.8 }, { di: 315, e: 0.8 }];
+export const spiroThickness = (d: number | null) => SPIRO.find(x => x.di === d)?.e ?? null;
+/** Serie por defecto: tabla Spiroduct hasta 315 y serie ISO R20 por encima (la tabla facilitada acaba en 315). */
+export const SPIRO_SERIES = [...SPIRO.map(x => x.di), ...R20_SERIES.filter(x => x > 315)];
+
+/** Criterios de velocidad de diseño (5.4.0.1): "o por debajo de ellas". */
+export interface Criterio { name: string; vTarget: number; vMin: number; vMax: number }
+export const CRITERIOS_VEL: Criterio[] = [
+  { name: 'Principal de suministro de aire', vTarget: 12, vMin: 10, vMax: 12 },
+  { name: 'Principal de ramificación (espiral)', vTarget: 15, vMin: 0, vMax: 15 },
+  { name: 'Cerca de un difusor de aire', vTarget: 7, vMin: 5, vMax: 7 },
+  { name: 'Principal de extracción', vTarget: 10, vMin: 0, vMax: 10 },
+  { name: 'Cerca de la boquilla de extracción', vTarget: 5, vMin: 0, vMax: 5 },
+  { name: 'Aire fresco (AFU a ATU)', vTarget: 7, vMin: 0, vMax: 7 },
+  { name: 'Entrada/salida de ventiladores (área libre)', vTarget: 5, vMin: 4, vMax: 5 }];
+
 /** TABLA PROVISIONAL (eje menor R20 × eje mayor en pasos de 50). Sustituir por la del fabricante. */
 export function provisionalOval(): { minor: number; major: number }[] {
   const out: { minor: number; major: number }[] = [];
