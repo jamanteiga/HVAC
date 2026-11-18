@@ -776,7 +776,7 @@
         [['codo90', 'Codo 90°'], ['codo45', 'Codo 45°'], ['codo60', 'Codo 60°'], ['curva', 'Curva de conducto'], ['tee', 'Derivación en T'], ['cruce', 'Cruce'], ['injerto', 'Derivación (injerto)'], ['reduccion', 'Reducción / transición'], ['junta', 'Junta flexible'], ['antivibratorio', 'Manguito antivibratorio']].forEach(([k, n]) => { if (TIPOS[k]) { TIPOS[k].nombre = n; TIPOS[k].cat = 'hv_accesorios'; } });
         // Subtipos de versiones anteriores
         const MIGRA_SUBTIPO = { codo: 'codo90', union: 'bridaunion' };
-        const CATEGORIAS = [['hv_accesorios', 'Accesorios de conducto'], ['hv_compuertas', 'Compuertas'], ['hv_equipos', 'Equipos'], ['hv_terminales', 'Terminales'], ['anotaciones', 'Anotaciones']];
+        const CATEGORIAS = [['tuberias', 'Conductos'], ['hv_accesorios', 'Accesorios de conducto'], ['hv_compuertas', 'Compuertas'], ['hv_equipos', 'Equipos'], ['hv_terminales', 'Terminales'], ['anotaciones', 'Anotaciones']];
         // Grupos que se muestran dentro de la categoría Accesorios de la librería
 
         // Tablas de Crane adicionales (se añaden al catálogo). Un valor numérico es el múltiplo n de
@@ -5612,10 +5612,9 @@
         // LIBRERÍA DE SÍMBOLOS (panel derecho), generada desde TIPOS
         // ==================================================================================
         const TUBERIAS_LIBRERIA = [
-            { material: 'Acero al carbono', serie: '40', dn: 'DN 50', texto: 'Acero ASME / EN', acero: true },
-            { material: 'PE80', texto: 'PE80' }, { material: 'PE100', serie: 'SDR 11 (PN16)', dn: 'd63', texto: 'PE100' }, { material: 'PVC-U', serie: 'PN10', dn: 'd63', texto: 'PVC-U' },
-            { material: 'CPVC', texto: 'CPVC' }, { material: 'PP-R', texto: 'PP-R' }, { material: 'PP-H', texto: 'PP-H' }, { material: 'PVDF', texto: 'PVDF' },
-            { material: 'Cobre EN 1057', serie: '1.0 mm', dn: 'd22', texto: 'Cobre EN 1057' }, { material: 'Cuproníquel 90/10', serie: '2.0 mm', dn: 'd57', texto: 'Cuproníquel 90/10' }, { material: 'Fundición (Dint ref. Sch 40)', texto: 'Fundición' }, { material: 'Hormigón (Dint ref. Sch 40)', texto: 'Hormigón' }
+            { material: 'Espiro Spiroduct (acero galvanizado)', serie: 'Spiroduct', dn: 'Ø 200', texto: 'Conducto espiro (Spiroduct)' },
+            { material: 'Conducto circular (chapa galvanizada)', serie: 'No estanco', dn: 'Ø 250', texto: 'Conducto circular · no estanco' },
+            { material: 'Conducto circular (chapa galvanizada)', serie: 'Estanco', dn: 'Ø 250', texto: 'Conducto circular · estanco' }
         ];
         // schedule y medida por defecto de una tubería del panel (los que falten se toman del material)
         function tuboPanel(t) {
@@ -5676,7 +5675,7 @@
             let h = '';
             CATEGORIAS.slice().sort((a, b) => a[1].localeCompare(b[1], 'es')).forEach(([id, titulo]) => {
                 let items = '';
-                if (id === 'tuberias') items = TUBERIAS_LIBRERIA.map(tuboPanel).filter(Boolean).sort((a, b) => a.texto.localeCompare(b.texto, 'es')).map(t => item(`data-type="tuberia" data-material="${t.material}" data-serie="${t.serie}" data-dn="${t.dn}" data-longitud="3000" data-name="Tubería"`, `${t.texto}<span class="text-slate-400"> · ${t.acero ? 'TAC / TAI' : CODIGO_MATERIAL[t.material]}</span>`, `<svg viewBox="0 0 42 40" width="26" height="20" style="flex:none"><line x1="2" y1="20" x2="40" y2="20" stroke="#2563eb" stroke-width="2.5"/><polygon points="24,12 30,15 24,18" fill="#16a34a"/></svg>`)).join('');
+                if (id === 'tuberias') items = TUBERIAS_LIBRERIA.map(tuboPanel).filter(Boolean).sort((a, b) => a.texto.localeCompare(b.texto, 'es')).map(t => item(`data-type="tuberia" data-material="${t.material}" data-serie="${t.serie}" data-dn="${t.dn}" data-longitud="3000" data-name="Tubería"`, `${t.texto}<span class="text-slate-400"> · ${t.acero ? 'TAC / TAI' : (CODIGO_MATERIAL[t.material] || t.serie)}</span>`, `<svg viewBox="0 0 42 40" width="26" height="20" style="flex:none"><line x1="2" y1="20" x2="40" y2="20" stroke="#2563eb" stroke-width="2.5"/><polygon points="24,12 30,15 24,18" fill="#16a34a"/></svg>`)).join('');
                 else if (id === 'bombas') items = item(`data-type="bomba" data-name="Bomba centrífuga" data-caudal="50" data-presion="3.5" data-npsh="2500"`, 'Bomba centrífuga<span class="text-slate-400"> · BO</span>', `<svg viewBox="0 0 50 50" width="26" height="20" style="flex:none">${simboloBomba('#2563eb', { relleno: '#fff' })}</svg>`);
                 else if (id === 'accesorios') {
                     FAMILIAS_PANEL.filter(f => !(proyecto.soloPID && f.id === 'bridas')).sort((x, y) => x.titulo.localeCompare(y.titulo, 'es')).forEach(f => {
@@ -6154,7 +6153,7 @@
             // tuberías del panel derecho: las del programa y una por cada material nuevo
             TUBERIAS_LIBRERIA.length = 0;
             TUBERIAS_BASE.forEach(t => { const r = tuboPanel(t); if (r) TUBERIAS_LIBRERIA.push(r); });
-            Object.keys(CAT.materiales).filter(m => CAT.materiales[m].base && m !== TUBO_EN && !LIB.ocultos.includes(m)).forEach(m => {
+            Object.keys(CAT.materiales).filter(m => /^(Espiro|Conducto)/.test(m) && m !== TUBO_EN && !LIB.ocultos.includes(m) && !TUBERIAS_BASE.some(b => b.material === m)).forEach(m => {
                 const mt = CAT.materiales[m], serie = mt.serieDef || mt.series[0], t = mt.tamanos.find(x => x.clave === 'DN 50' && x.e[serie] != null) || mt.tamanos.find(x => x.e[serie] != null);
                 if (t) TUBERIAS_LIBRERIA.push({ material: m, serie, dn: t.clave, texto: m });
             });
@@ -11747,6 +11746,22 @@
             document.querySelectorAll('#modal-proyecto .btn-cancelar-proyecto').forEach(b => b.style.display = cancelar ? '' : 'none');
             document.getElementById('modal-proyecto').style.display = 'flex';
         }
+        // HVAC: el formulario de datos del proyecto se simplifica para redes de aire (se ocultan los campos de agua y bombas)
+        function adaptarFormularioHVAC() {
+            const raiz = document.getElementById('modal-proyecto-body'); if (!raiz) return;
+            const ocultar = e => { if (!e) return; const d = e.closest('div') || e.closest('label'); if (d) d.style.display = 'none'; };
+            ['dp-p-tCierre', 'dp-grupoPED', 'dp-criterioPrueba', 'dp-p-horasAnuales', 'dp-p-precioEnergia', 'dp-p-etaMotor', 'dp-p-tAmbiente', 'dp-p-tMontaje', 'dp-p-vAsp'].forEach(id => ocultar(document.getElementById(id)));
+            ['dp-exterior', 'dp-salvaguardas', 'dp-soloPID', 'dp-mezcla'].forEach(id => { const e = document.getElementById(id); const l = e && e.closest('label'); if (l) l.style.display = 'none'; });
+            const tv = document.getElementById('dp-tabla-v'); if (tv && tv.parentElement) tv.parentElement.style.display = 'none';
+            const rotular = (id, txt) => { const e = document.getElementById(id), l = e && e.parentElement && e.parentElement.querySelector('label'); if (l) l.innerHTML = txt; };
+            rotular('dp-p-vImp', 'Velocidad máx. en conductos (m/s) *');
+            rotular('dp-p-presionDiseno', 'Presión del primer tramo (bar) * · p. ej. 0,01 bar = 1 kPa');
+            rotular('dp-p-caudalDiseno', 'Caudal de diseño del sistema (m³/h) *');
+            const por = (id, v) => { const e = document.getElementById(id); if (e && !e.value) e.value = v; };
+            por('dp-fluido', 'Aire'); por('dp-tipoInstalacion', 'naval'); por('dp-p-temperatura', '24'); por('dp-p-tsMax', '60');
+            por('dp-p-vImp', '10'); por('dp-p-vAsp', '1'); por('dp-p-presionDiseno', '0.01');
+        }
+        { const _adp = abrirDatosProyecto; abrirDatosProyecto = function () { const r = _adp.apply(this, arguments); try { adaptarFormularioHVAC(); } catch (e) { console.warn(e); } return r; }; }
         function actualizarVRecomendada(fijar) {
             const fl = document.getElementById('dp-fluido').value, tipo = document.getElementById('dp-tipoInstalacion').value;
             const rec = velocidadRecomendada(fl, tipo);

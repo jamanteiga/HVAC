@@ -5,3 +5,16 @@ window.CATALOGO = {"version":"2026-10-10.1","fluidos":{"Agua":{"tabla":[[0,1000,
 
 // HVAC: el único fluido es aire seco a presión atmosférica [T °C, ρ kg/m³, ν mm²/s, pv kPa]
 window.CATALOGO.fluidos = { 'Aire': { tabla: [[-10, 1.341, 12.4, 0], [0, 1.292, 13.3, 0], [10, 1.247, 14.2, 0], [20, 1.204, 15.1, 0], [30, 1.165, 16.0, 0], [40, 1.127, 16.9, 0], [50, 1.093, 17.9, 0], [60, 1.060, 18.9, 0]], nota: 'Aire seco a 101325 Pa', Kf: 1000 } };
+
+// HVAC: conductos circulares. Medidas INTERIORES; od = Di + 2e para encajar en el modelo de tuberías de PIPING.
+(function () {
+    const M = window.CATALOGO.materiales;
+    const SPIRO = [[80, 0.5], [100, 0.5], [125, 0.5], [160, 0.5], [180, 0.5], [200, 0.5], [224, 0.8], [250, 0.8], [280, 0.8], [300, 0.8], [315, 0.8]];
+    M['Espiro Spiroduct (acero galvanizado)'] = { norma: 'Spiroduct', rug: 0.15, series: ['Spiroduct'], serieDef: 'Spiroduct',
+        tamanos: SPIRO.map(([d, e]) => ({ clave: 'Ø ' + d, nps: '', od: +(d + 2 * e).toFixed(2), e: { 'Spiroduct': e } })) };
+    // Tabla 1A-1: espesor según el diámetro (no estanco / estanco)
+    const e1A1 = (d, est) => d <= 150 ? (est ? 2 : 1) : d <= 300 ? (est ? 2.5 : 1) : d <= 450 ? (est ? 3 : 1) : (est ? 3 : 1.5);
+    const R20 = [63, 71, 80, 90, 100, 112, 125, 140, 160, 180, 200, 224, 250, 280, 315, 355, 400, 450, 500, 560, 630, 710, 800, 900, 1000, 1120, 1250, 1400, 1600, 1800, 2000];
+    M['Conducto circular (chapa galvanizada)'] = { norma: 'Tabla 1A-1', rug: 0.15, series: ['No estanco', 'Estanco'], serieDef: 'No estanco',
+        tamanos: R20.map(d => ({ clave: 'Ø ' + d, nps: '', od: +(d + 2 * e1A1(d, false)).toFixed(2), e: { 'No estanco': e1A1(d, false), 'Estanco': e1A1(d, true) } })) };
+})();
