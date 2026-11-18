@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Button, Card, Field, Input, Text, Title3 } from '@fluentui/react-components';
 import { weight, perimeter, WShape } from '../engine/weights';
 import { parseNum } from './DataGrid';
+import { SPIRO, spiroThickness } from '../engine/quick';
 
 // Colores de la hoja: verde = dato manual, azul = constante, amarillo = calculado.
 const C = { in: '#b9e6a5', const: '#9fd3f5', calc: '#fff3a6', head: '#00b0f0' };
@@ -18,18 +19,23 @@ const FIELDS: Record<WShape, { k: K; label: string; unit: string }[]> = {
 // Fila de la tabla: definida fuera de Calc para que no se vuelva a montar en cada pulsación (si no, el campo pierde el foco).
 const Row = ({ label, color, children, unit, bold }: any) => (<tr style={{ background: color, fontWeight: bold ? 700 : 400 }}><td style={cell}>{label}</td><td style={{ ...cell, textAlign: 'right', width: 120 }}>{children}</td><td style={{ ...cell, textAlign: 'center', width: 70 }}>{unit}</td></tr>);
 
-function Calc({ shape, rho, lmax, pmax }: { shape: WShape; rho: string; lmax: number; pmax: number }) {
-  const [v, setV] = useState<Record<string, string>>({ espesor: '3', extra: '0' });
+function Calc({ shape, rho, lmax, pmax, spiro }: { shape: WShape; rho: string; lmax: number; pmax: number; spiro?: boolean }) {
+  const [v, setV] = useState<Record<string, string>>(spiro ? { diam: '200', extra: '0' } : { espesor: '3', extra: '0' });
   const [info, setInfo] = useState('');
-  const n = (k: K) => parseNum(v[k]) ?? 0;
+  const n = (k: K) => k === 'espesor' && spiro ? (spiroThickness(parseNum(v.diam) ?? null) ?? 0) : parseNum(v[k]) ?? 0;
   const R = useMemo(() => weight({ shape, alto: n('alto'), ancho: n('ancho'), diam: n('diam'), espesor: n('espesor'), longitud: n('longitud'), densidad: parseNum(rho) ?? 7850, extra: n('extra') }), [v, shape, rho]); // eslint-disable-line
   return (
     <Card style={{ padding: 0, overflow: 'hidden', minWidth: 320 }}>
       <table style={{ borderCollapse: 'collapse', width: '100%', fontSize: 13 }}>
-        <thead><tr><th colSpan={3} style={{ background: C.head, color: '#111', padding: 6 }}>CONDUCTO {shape.toUpperCase()}</th></tr>
+        <thead><tr><th colSpan={3} style={{ background: C.head, color: '#111', padding: 6 }}>CONDUCTO {spiro ? 'ESPIRO (SPIRODUCT)' : shape.toUpperCase()}</th></tr>
           <tr style={{ background: '#3b6ea5', color: '#fff' }}><th style={{ ...cell, color: '#fff', textAlign: 'left' }}>Dimensión</th><th style={{ ...cell, color: '#fff' }}>Valor</th><th style={{ ...cell, color: '#fff' }}>Unidad</th></tr></thead>
         <tbody>
-          {FIELDS[shape].map(f => (
+          {FIELDS[shape].map(f => spiro && f.k === 'diam' ? (
+            <Row key={f.k} label="Diámetro interior" color={C.in} unit="mm"><select value={v.diam ?? ''} onChange={e => setV(s => ({ ...s, diam: e.target.value }))} style={{ width: 100, background: 'transparent', color: '#111', border: 'none', borderBottom: '1px solid #555', textAlign: 'right', fontSize: 13 }}>
+              {SPIRO.map(x => <option key={x.di} value={x.di} style={{ color: '#111' }}>{x.di}</option>)}</select></Row>
+          ) : spiro && f.k === 'espesor' ? (
+            <Row key={f.k} label="Espesor (según tabla)" color={C.const} unit="mm"><Input size="small" appearance="underline" disabled readOnly value={String(n('espesor')).replace('.', ',')} style={{ width: 100, background: 'transparent' }} input={{ style: { textAlign: 'right', color: '#111', WebkitTextFillColor: '#111' } }} /></Row>
+          ) : (
             <Row key={f.k} label={f.label} color={C.in} unit={f.unit}><Input size="small" appearance="underline" value={v[f.k] ?? ''} onChange={(_, x) => setV(s => ({ ...s, [f.k]: x.value }))} style={{ width: 100, background: 'transparent', color: '#111' }} input={{ style: { textAlign: 'right', color: '#111' } }} /></Row>))}
           <Row label="Peso extra" color={C.in} unit="kg"><Input size="small" appearance="underline" value={v.extra ?? ''} onChange={(_, x) => setV(s => ({ ...s, extra: x.value }))} style={{ width: 100, background: 'transparent' }} input={{ style: { textAlign: 'right', color: '#111' } }} /></Row>
           <Row label="Peso" color={C.calc} unit="kg">{fmt(R.peso)}</Row>
@@ -71,6 +77,7 @@ export function Module6() {
 </div></Card>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(330px,1fr))', gap: 16, alignItems: 'start' }}>
         {(['Rectangular', 'Circular', 'Oval'] as WShape[]).map(s => <Calc key={s} shape={s} rho={rho} lmax={lmax} pmax={pmax} />)}
+        <Calc key="espiro" spiro shape="Circular" rho={rho} lmax={lmax} pmax={pmax} />
       </div>
     </div>
   );
