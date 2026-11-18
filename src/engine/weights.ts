@@ -16,3 +16,11 @@ export function weight(i: WInput): WResult {
   const peso = volumen * 1e-9 * i.densidad; // kg (ρ en kg/m³)
   return { perimetro, area, volumen, peso, total: peso + i.extra };
 }
+
+/** Tabla 1A-1: espesor (mm) según diámetro o dimensión nominal (lado mayor en rectangular). */
+const T1A1: { hasta: number; noEst: number; est: number }[] = [
+  { hasta: 150, noEst: 1, est: 2 }, { hasta: 300, noEst: 1, est: 2.5 }, { hasta: 450, noEst: 1, est: 3 }, { hasta: 760, noEst: 1.5, est: 3 }, { hasta: Infinity, noEst: 1.5, est: 3 }];
+export function espesorTabla(dimNominal: number, estanco: boolean): number | null {
+  if (!(dimNominal > 0)) return null;
+  const r = T1A1.find(x => dimNominal <= x.hasta)!; return estanco ? r.est : r.noEst;
+}

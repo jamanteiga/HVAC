@@ -159,3 +159,10 @@ describe('Spiroduct y criterios', () => {
   it('serie por defecto', () => { expect(SPIRO_SERIES.slice(0, 3)).toEqual([80, 100, 125]); expect(SPIRO_SERIES).toContain(300); expect(SPIRO_SERIES).not.toContain(90); expect(SPIRO_SERIES).toContain(355); });
   it('7 criterios', () => expect(CRITERIOS_VEL.length).toBe(7));
 });
+
+import { espesorTabla } from '../engine/weights';
+describe('Tabla 1A-1 espesores', () => {
+  it('no estanco', () => { expect([100, 150, 151, 300, 301, 450, 451, 760, 761, 2000].map(d => espesorTabla(d, false))).toEqual([1, 1, 1, 1, 1, 1, 1.5, 1.5, 1.5, 1.5]); });
+  it('estanco', () => { expect([100, 150, 151, 300, 301, 450, 451, 761].map(d => espesorTabla(d, true))).toEqual([2, 2, 2.5, 2.5, 3, 3, 3, 3]); });
+  it('sin dimensión', () => expect(espesorTabla(0, false)).toBeNull());
+});
