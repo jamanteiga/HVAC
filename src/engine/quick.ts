@@ -1,6 +1,6 @@
 // Dimensionado rápido: caudal + velocidad -> medidas INTERIORES.
 import { flatOvalArea } from './geometry';
-import { unitLoss } from './sizing';
+import { unitLoss, circForFriction } from './sizing';
 
 export const R20_SERIES = [63, 71, 80, 90, 100, 112, 125, 140, 160, 180, 200, 224, 250, 280, 315, 355, 400, 450, 500, 560, 630, 710, 800, 900, 1000, 1120, 1250, 1400, 1600, 1800, 2000];
 
@@ -82,6 +82,13 @@ export function rectOptions(q: number, vt: number, ctx: Ctx, o: RectOpts): Opt[]
 
 /** Diámetro equivalente de Huebscher para rectangular (mm): 1,3·(ab)^0,625 / (a+b)^0,25. */
 export const deHuebscher = (a: number, b: number) => (a > 0 && b > 0 ? (1.3 * Math.pow(a * b, 0.625)) / Math.pow(a + b, 0.25) : 0);
+
+/** Ø circular equivalente por igualdad de pérdida de carga unitaria (Darcy-Weisbach + Colebrook, mismo caudal), mm. */
+export function deDarcy(q: number, a: number, b: number, ctx: Ctx): number {
+  if (!(q > 0 && a > 0 && b > 0)) return 0;
+  const dp = unitLoss(q, { shape: 'Rectangular', a, b }, ctx.rough, ctx.tC, ctx.p).dp;
+  return circForFriction(q, dp, ctx.rough, ctx.tC, ctx.p);
+}
 
 /** Comprobación de un circular de diámetro libre (mm). */
 export function circCheck(q: number, vt: number, ctx: Ctx, d: number): Opt {

@@ -169,3 +169,12 @@ describe('Tabla 1A-1 espesores', () => {
 
 import { deHuebscher } from '../engine/quick';
 describe('Huebscher', () => { it('200x400 ≈ 304,7 mm', () => expect(deHuebscher(200, 400)).toBeCloseTo(304.67, 1)); });
+
+import { deDarcy } from '../engine/quick';
+describe('Ø equivalente por igualdad de pérdida (Darcy-Weisbach)', () => {
+  it('con la misma pérdida unitaria y caudal', () => {
+    const ctx = { rough: 0.15, tC: 24 }; const d = deDarcy(2414, 200, 400, ctx);
+    const r = unitLoss(2414, { shape: 'Rectangular', a: 200, b: 400 }, 0.15, 24).dp, c = unitLoss(2414, { shape: 'Circular', d }, 0.15, 24).dp;
+    expect(Math.abs(c - r) / r).toBeLessThan(1e-6); expect(d).toBeGreaterThan(290); expect(d).toBeLessThan(320);
+  });
+});

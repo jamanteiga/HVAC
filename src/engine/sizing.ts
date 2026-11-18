@@ -36,7 +36,7 @@ export function unitLoss(q_m3h: number, g: { shape: Shape; a?: number; b?: numbe
 function circFromArea(A: number) { return Math.sqrt((4 * A) / Math.PI) * 1000; }
 
 /** Diámetro circular con pérdida unitaria objetivo (bisección). */
-function circForFriction(q: number, R: number, rough: number, tC: number, p?: number) {
+export function circForFriction(q: number, R: number, rough: number, tC: number, p?: number) {
   let lo = 20, hi = 5000;
   for (let i = 0; i < 100; i++) {
     const mid = (lo + hi) / 2;
