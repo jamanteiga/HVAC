@@ -10,7 +10,11 @@ const f = (v: number, d = 2) => v.toLocaleString('es-ES', { minimumFractionDigit
 const th: React.CSSProperties = { textAlign: 'left', padding: '6px 12px', background: 'var(--hdr)', borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap' };
 const td: React.CSSProperties = { padding: '5px 12px', borderBottom: '1px solid var(--border2)', whiteSpace: 'nowrap' };
 
-function Result({ rows, kind, vt }: { rows: Opt[]; kind: 'circ' | 'dim'; vt: number }) {
+const YEL = 'rgba(255,214,0,0.45)', RED = 'rgba(224,36,36,0.5)';
+/** Fondo de la relación: normal ≤ lim; amarillo > lim; rojo > 3,5. */
+const ratioBg = (extra: string | undefined, lim?: number) => { if (lim == null) return undefined; const x = parseFloat(extra ?? ''); return x > 3.5 + 1e-9 ? RED : x > lim + 1e-9 ? YEL : undefined; };
+
+function Result({ rows, kind, vt, lim }: { rows: Opt[]; kind: 'circ' | 'dim'; vt: number; lim?: number }) {
   if (!rows.length) return <MessageBar intent="warning"><MessageBarBody>Sin resultados con estos límites.</MessageBarBody></MessageBar>;
   return (
     <div style={{ overflow: 'auto' }}>
@@ -18,7 +22,7 @@ function Result({ rows, kind, vt }: { rows: Opt[]; kind: 'circ' | 'dim'; vt: num
         <thead><tr><th style={th}>{kind === 'circ' ? 'Ø interior (mm)' : 'Interior (mm)'}</th>{kind === 'dim' && <th style={th}>Relación</th>}<th style={th}>Área (m²)</th><th style={th}>v real (m/s)</th><th style={th}>Desv. vs objetivo</th><th style={th}>ΔP (Pa/m)</th><th style={th}>Nota</th></tr></thead>
         <tbody>{rows.map((r, i) => (
           <tr key={i} style={{ background: r.best ? 'var(--best)' : undefined, fontWeight: r.best ? 600 : 400 }}>
-            <td style={td}>{kind === 'circ' ? `Ø ${r.d}` : `${r.a} × ${r.b}`}</td>{kind === 'dim' && <td style={td}>{r.extra}</td>}
+            <td style={td}>{kind === 'circ' ? `Ø ${r.d}` : `${r.a} × ${r.b}`}</td>{kind === 'dim' && <td style={{ ...td, background: ratioBg(r.extra, lim) }}>{r.extra}</td>}
             <td style={td}>{f(r.area, 4)}</td>
             <td style={{ ...td, color: r.v > vt * 1.0000001 ? 'var(--over)' : undefined }}>{f(r.v)}</td>
             <td style={td}>{r.dev >= 0 ? '+' : ''}{f(r.dev * 100, 1)} %</td><td style={td}>{f(r.dp, 3)}</td><td style={td}>{r.label}</td></tr>))}</tbody>
@@ -88,11 +92,12 @@ export function Module5() {
         <Text size={200} style={{ color: 'var(--subtle)' }}>Indica alto y ancho para calcular la velocidad con el caudal; con solo uno se calcula el otro lado; sin ninguno se muestran alternativas.</Text>
         {chk && <div style={{ overflow: 'auto' }}><table style={{ borderCollapse: 'collapse', fontSize: 13 }}>
           <thead><tr><th style={th}>Interior (mm)</th><th style={th}>Relación</th><th style={th}>Área (m²)</th><th style={th}>v real (m/s)</th><th style={th}>ΔP (Pa/m)</th><th style={th}>Nota</th></tr></thead>
-          <tbody><tr style={{ background: 'var(--best)', fontWeight: 600 }}><td style={td}>{hN} × {wN}</td><td style={td}>{chk.extra}</td><td style={td}>{f(chk.area, 4)}</td>
+          <tbody><tr style={{ background: 'var(--best)', fontWeight: 600 }}><td style={td}>{hN} × {wN}</td><td style={{ ...td, background: ratioBg(chk.extra, RR) }}>{chk.extra}</td><td style={td}>{f(chk.area, 4)}</td>
             <td style={{ ...td, color: chk.v > 10 || chk.v < 7 ? 'var(--over)' : undefined }}>{f(chk.v)}</td><td style={td}>{f(chk.dp, 3)}</td><td style={td}>{chk.label}</td></tr></tbody></table></div>}
+        {chk && ratioBg(chk.extra, RR) && <MessageBar intent={ratioBg(chk.extra, RR) === RED ? 'error' : 'warning'}><MessageBarBody>{ratioBg(chk.extra, RR) === RED ? 'La relación supera el límite 1:3,5.' : `La relación supera 1:${f(RR, 1)} (normal); el límite es 1:3,5.`}</MessageBarBody></MessageBar>}
         {chk && (chk.v < 7 || chk.v > 10) && <MessageBar intent="warning"><MessageBarBody>La velocidad {f(chk.v, 1)} m/s queda fuera del rango 7–10 m/s.</MessageBarBody></MessageBar>}
         {chk && <Subtitle2>Alternativas</Subtitle2>}
-        <Result rows={rect} kind="dim" vt={V} /></Card>}
+        <Result rows={rect} kind="dim" vt={V} lim={RR} /></Card>}
       {tab === 'oval' && <Card><Subtitle2>Oval plano — menor eje a cada medida normalizada</Subtitle2>
         {provisional && <MessageBar intent="warning"><MessageBarBody>Tabla PROVISIONAL (eje menor R20 × eje mayor en pasos de 50). Sustitúyela por la del fabricante en «Tablas normalizadas».</MessageBarBody></MessageBar>}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))', gap: 10 }}>
