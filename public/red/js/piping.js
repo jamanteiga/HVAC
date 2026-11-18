@@ -1677,7 +1677,7 @@
                     ${nSel('nd-tipoConexion', 'tipoConexion', 'Tipo de conexión', TIPOS_CONEXION, el.tipoConexion)}
                     ${nSel('nd-dnConexion', 'dnConexion', 'Tamaño de la conexión', [['', '— igual que la tubería —'], ...listaDN], el.dnConexion || '')}
                     ${nNum('nd-presionDep', 'presionDep', `Presión sobre la lámina (${lP()} man.; 0 = abierto)`, mostrarCampo('presionDep', el.presionDep))}
-                    ${nNum('nd-volumen', 'volumen', 'Volumen interior (l) · PED recipientes', el.volumen || '')}
+                    ${nNum('nd-volumen', 'volumen', 'Volumen interior (l)', el.volumen || '')}
                     <p class="text-[10px] text-slate-400">Conexión b a cota ${fmt(el.cota, 2)} m · lámina a ${fmt(el.cotaLamina, 2)} m (se recalculan al aceptar).</p>`;
             } else if (el.type === 'instrumento') {
                 h += `<p class="font-bold text-slate-600">Instrumento</p>
@@ -3191,7 +3191,7 @@
             if (obj.type === 'equipo') {
                 h += ctrlMag(fn, 'qNom', obj.qNom, dosCircuitos(obj) ? 'Primario a–b: caudal nominal' : 'Caudal nominal') + ctrlMag(fn, 'dpNom', obj.dpNom, 'Δp a caudal nominal');
                 if (dosCircuitos(obj)) h += ctrlMag(fn, 'qNom2', obj.qNom2, 'Secundario c–d: caudal nominal') + ctrlMag(fn, 'dpNom2', obj.dpNom2, 'Δp a caudal nominal');
-                h += ctrlNum(fn, 'volumen', obj.volumen || '', 'Volumen interior (l) · vaso de expansión y PED recipientes', 'any');
+                h += ctrlNum(fn, 'volumen', obj.volumen || '', 'Volumen interior (l)', 'any');
                 if (+obj.volumen > 0) h += ctrlMag(fn, 'psRecipiente', obj.psRecipiente || '', 'PS del recipiente', '; vacío = calculada') + infoRecipiente(obj);
                 return h + info('Pérdida de carga del fabricante: Δp = Δp nom · (Q/Q nom)².');
             }
@@ -3204,7 +3204,7 @@
                     ctrlNum(fn, 'hC', obj.hC, 'Conexión superior c: altura sobre el fondo (m)', '0.01') + ctrlNum(fn, 'hLamina', obj.hLamina, 'Nivel de líquido sobre el fondo (m)', '0.01') +
                     ctrlSelect(fn, 'tipoConexion', TIPOS_CONEXION, obj.tipoConexion, 'Tipo de conexión') + ctrlSelect(fn, 'dnConexion', [['', '— igual que la tubería —'], ...LISTA_DN.map(d => [d, etiquetaDN(d)])], obj.dnConexion || '', 'Tamaño de la conexión') +
                     ctrlMag(fn, 'presionDep', obj.presionDep, 'Presión sobre la lámina', ' man.') + ctrlSelect(fn, 'entradaTipo', [['aRas', 'Entrada a ras, arista viva (K 0,5)'], ['saliente', 'Tubo saliente hacia dentro (K 0,78)'], ['redondeada', 'Entrada redondeada r/d ≥ 0,15 (K 0,04)'], ['ninguna', 'Sin pérdidas de entrada ni de salida']], obj.entradaTipo || 'aRas', 'Conexión del tubo al depósito (Crane)') +
-                    ctrlNum(fn, 'volumen', obj.volumen || '', 'Volumen interior (l) · PED recipientes y vaso', 'any') + ctrlMag(fn, 'psRecipiente', obj.psRecipiente || '', 'PS del recipiente', '; vacío = calculada') + infoRecipiente(obj);
+                    ctrlNum(fn, 'volumen', obj.volumen || '', 'Volumen interior (l) y vaso', 'any') + ctrlMag(fn, 'psRecipiente', obj.psRecipiente || '', 'PS del recipiente', '; vacío = calculada') + infoRecipiente(obj);
                 return h + info(`Conexión b a cota ${fmt(obj.cota, 2)} m · c a ${fmt(obj.cotaEntrada, 2)} m · lámina a ${fmt(obj.cotaLamina, 2)} m.<br>Condición de contorno: altura piezométrica = cota de lámina + presión.`);
             }
             if (obj.type === 'instrumento') {
@@ -11581,6 +11581,7 @@
             SOC: { nombre: 'Sociedad de clasificación (BV/DNV/LR): 1,5·p', f: PS => 1.5 * PS, texto: 'Pt = 1,5·p (reglas de la sociedad)' }
         };
         function clasificacionPED(resultado) {
+            if (resultado.fluido && /^(Aire)/.test(resultado.fluido.nombre || '')) { resultado.ped = []; resultado.pedRecipientes = []; return; }   // HVAC: en conductos de aire no hay PED
             const fl = resultado.fluido, TS = +proyecto.tsMax > 0 ? +proyecto.tsMax : fl.T;
             const pf = propiedadesFluido(fl.nombre, TS), pvTS = pf.ok ? pf.pv : fl.pv;
             const gas = pvTS > PRESION_ATM + 0.5e5;
@@ -12892,7 +12893,6 @@
                     { icono: 'fa-table', texto: 'Comparar A / B...', accion: () => compararEscenarios() }] },
                 { icono: 'fa-chart-area', texto: 'Perfil hidráulico de la ruta crítica...', accion: () => perfilRutaCritica() },
                 { icono: 'fa-chart-line', texto: 'Curva de la bomba y de la red...', accion: () => curvaBombaRed() },
-                { icono: 'fa-certificate', texto: 'Validación PED por línea...', accion: () => validacionPED() },
                 { icono: 'fa-people-arrows', texto: 'Escenario de bombas', sub: () => [
                     { icono: escenarioBombas === 'normal' ? 'fa-check' : 'fa-square', texto: 'Normal (bombas de servicio)', accion: () => cambiarEscenario('normal') },
                     { icono: escenarioBombas === 'reserva' ? 'fa-check' : 'fa-square', texto: 'Reserva en marcha (sustituye a su bomba de servicio)', accion: () => cambiarEscenario('reserva') }] },

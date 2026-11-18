@@ -627,7 +627,6 @@ async function construirInforme(D, opc = {}) {
                 ['Bombas: cavitación', `NPSHd − NPSHr ≥ ${nf(opciones.margenNPSH, 2)} m`], ['Bombas: caudal', `Σ Q bombas ≥ ${nf(res.Qdiseno, 2)} m³/h (caudal de diseño)`],
                 ['Tuberías: presión', 'p máx de servicio ≤ PMA (ASME B31.3 en acero; PN × factor de temperatura en PVC-U y PE)'], ['Toda la red: vaporización', 'p absoluta ≥ pv del fluido en todos los nodos'],
                 ['Puntos de consumo', 'p ≥ p mínima requerida; el exceso se absorbe con válvula de equilibrado'],
-                ['Clasificación PED de líneas', 'Art. 4.1.c y anexo II (cuadros 6 a 9) de la Directiva 2014/68/UE; presión de prueba ≤ 1,5·PMA en tuberías y ≤ prueba de cuerpo 1,5·PN en componentes (aviso)'],
                 ['Golpe de ariete (aviso)', `p máx + Δp ariete ≤ PMA; tiempo de cierre ${+p.tCierre > 0 ? nf(+p.tCierre, 1) + ' s' : 'instantáneo'}`], ['Presión a caudal nulo (aviso)', 'p con la bomba contra válvula cerrada ≤ PMA']], [35, 65]));
             titulo(2, '2.5. Método de cálculo y referencias');
             cuerpo.push(leyenda('Tabla', 'Formulación empleada'));
@@ -651,10 +650,7 @@ async function construirInforme(D, opc = {}) {
                 ['PMA termoplásticos', 'PMA = PN·fT', 'EN ISO 1452-2 anexo A (PVC-U), EN 12201-1 anexo A (PE)'],
                 ['Equipos', 'Δp = Δp nom·(Q/Q nom)²', 'Dato del fabricante'],
                 ['Válvulas de equilibrado', 'Kv = Q·√[(ρ/1000)/Δp];  Cv = 1,156·Kv', 'IEC 60534 / EN 60534'],
-                ['Celeridad de la onda', 'a = √[(Kf/ρ)/(1 + Kf·D/(E·e))]', 'Korteweg'],
-                ['Golpe de ariete', 'tc ≤ 2L/a: Δp = ρ·a·V;  tc > 2L/a: Δp = 2·ρ·L·V/tc', 'Joukowsky / Michaud'],
-                ['Categoría PED de tuberías', 'Estado (gas si pv(TS) > 0,5 bar man.), grupo (art. 13), PS y DN → cuadros 6 a 9', 'Directiva 2014/68/UE, anexo II'],
-                ['Presión de prueba', (CRITERIOS_PRUEBA[p.criterioPrueba] || CRITERIOS_PRUEBA.PED).texto, (CRITERIOS_PRUEBA[p.criterioPrueba] || CRITERIOS_PRUEBA.PED).nombre]], [28, 42, 30]));
+            ], [28, 42, 30]));
 
             // ===== 3 DESCRIPCIÓN DE LA RED Y RESUMEN =====
             titulo(1, '3. Descripción de la red y resumen de resultados');
@@ -796,8 +792,8 @@ async function construirInforme(D, opc = {}) {
 
             // ===== 5 BALANCE DE LA RUTA CRÍTICA =====
             // ===== 5 CLASIFICACIÓN PED Y PRUEBA DE PRESIÓN =====
-            titulo(1, '5. Clasificación PED y prueba de presión');
             const ped = res.ped || [];
+            if (ped.length) titulo(1, '5. Clasificación PED y prueba de presión');
             if (ped.length) {
                 const x0 = ped[0];
                 cuerpo.push(par(`Las líneas se clasifican según el artículo 4.1.c y el anexo II (cuadros 6 a 9) de la Directiva 2014/68/UE de equipos a presión, con PS = mayor presión de diseño de sus tuberías (máximo entre servicio y bomba a caudal nulo), DN = mayor diámetro nominal de la línea y TS = ${nf(x0.TS, 0)} °C. ` +
