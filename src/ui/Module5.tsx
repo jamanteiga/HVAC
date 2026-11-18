@@ -10,6 +10,7 @@ const f = (v: number, d = 2) => v.toLocaleString('es-ES', { minimumFractionDigit
 const th: React.CSSProperties = { textAlign: 'left', padding: '6px 12px', background: 'var(--hdr)', borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap' };
 const td: React.CSSProperties = { padding: '5px 12px', borderBottom: '1px solid var(--border2)', whiteSpace: 'nowrap' };
 
+const GRN = 'rgba(46,160,67,0.45)';
 const YEL = 'rgba(255,214,0,0.45)', RED = 'rgba(224,36,36,0.5)';
 /** Fondo de la relación: normal ≤ lim; amarillo > lim; rojo > 3,5. */
 const ratioBg = (extra: string | undefined, lim?: number) => { if (lim == null) return undefined; const x = parseFloat(extra ?? ''); return x > 3.5 + 1e-9 ? RED : x > lim + 1e-9 ? YEL : undefined; };
@@ -37,7 +38,7 @@ export function Module5() {
   const [q, setQ] = useState('3600'); const [v, setV] = useState('8'); const [loc, setLoc] = useState(''); const [mat, setMat] = useState('Acero galvanizado');
   const [crit, setCrit] = useState(''); const [mode, setMode] = useState<'exceso' | 'proximo'>('exceso'); const [tab, setTab] = useState('circ');
   const [rratio, setRratio] = useState('2'); const [oratio, setOratio] = useState('6');
-  const [fixH, setFixH] = useState(''); const [fixW, setFixW] = useState('');
+  const [diagD, setDiagD] = useState(''); const [fixH, setFixH] = useState(''); const [fixW, setFixW] = useState('');
   const [omax, setOmax] = useState(''); const [paste, setPaste] = useState(''); const [sel, setSel] = useState<string | null>(null);
   const locales = p.design.locales ?? defaultLocales(); const L = locales.find(l => l.name === loc); const C = CRITERIOS_VEL.find(c => c.name === crit);
   const rng = C ? { name: C.name, min: C.vMin, max: C.vMax } : L ? { name: L.name, min: L.vMin, max: L.vMax } : { name: '', min: 7, max: 10 };
@@ -49,6 +50,8 @@ export function Module5() {
   const A = valid ? requiredArea(Q, V) : 0;
   const circ = useMemo(() => valid ? circularOptions(Q, V, circS, ctx) : [], [Q, V, circS, ctx, valid]);
   const hN = parseNum(fixH) ?? 0, wN = parseNum(fixW) ?? 0; const both = hN > 0 && wN > 0;
+  const DD = parseNum(diagD) ?? 0; const dReq = valid ? Math.sqrt((4 * A) / Math.PI) * 1000 : 0;
+  const dBg = (d: number) => DD > 0 ? (d > DD + 1e-9 ? RED : GRN) : undefined; // verde si ≤ Ø del diagrama, rojo si lo supera
   const chk = valid && both ? rectCheck(Q, V, ctx, hN, wN, 3.5) : null;
   const rect = useMemo(() => valid ? rectOptions(Q, V, ctx, { min: 100, maxH: 1000, stepH: 50, mode, fixH: both ? null : parseNum(fixH), fixW: both ? null : parseNum(fixW), maxRatio: RR }) : [], [Q, V, ctx, rratio, mode, fixH, fixW, both, valid]);
   const oval = useMemo(() => valid ? ovalOptions(Q, V, ovalT, ctx, { maxMinor: parseNum(omax), maxRatio: parseNum(oratio) ?? 6, mode }) : [], [Q, V, ovalT, ctx, omax, oratio, mode, valid]);
@@ -91,11 +94,13 @@ export function Module5() {
       {tab === 'circ' && <Card><Subtitle2>Diámetros interiores normalizados</Subtitle2><Result rows={circ} kind="circ" vt={V} /></Card>}
       {tab === 'rect' && <Card><Subtitle2>Rectangular — ambos lados terminados en 0 o 5</Subtitle2>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))', gap: 10 }}>
+          <Field label="Ø hidráulico del diagrama (mm)">{num(diagD, setDiagD)}</Field>
           <Field label="Alto (mm)">{num(fixH, setFixH)}</Field><Field label="Ancho (mm)">{num(fixW, setFixW)}</Field></div>
         <Text size={200} style={{ color: 'var(--subtle)' }}>Indica alto y ancho para calcular la velocidad con el caudal; con solo uno se calcula el otro lado; sin ninguno se muestran alternativas.</Text>
+        {valid && <Text style={{ background: dBg(dReq), padding: '4px 8px', borderRadius: 4, width: 'fit-content' }}>Caudal y velocidad → área necesaria <b>{f(A, 4)} m²</b> · Ø hidráulico necesario <b>{f(dReq, 2)} mm</b>{DD > 0 && <> · diagrama <b>{f(DD, 0)} mm</b> ({dReq > DD + 1e-9 ? 'lo supera' : 'dentro'})</>}</Text>}
         {chk && <div style={{ overflow: 'auto' }}><table style={{ borderCollapse: 'collapse', fontSize: 13 }}>
-          <thead><tr><th style={th}>Interior (mm)</th><th style={th}>Relación</th><th style={th}>Área (m²)</th><th style={th}>v real (m/s)</th><th style={th}>ΔP (Pa/m)</th><th style={th}>Nota</th></tr></thead>
-          <tbody><tr style={{ background: 'var(--best)', fontWeight: 600 }}><td style={td}>{hN} × {wN}</td><td style={{ ...td, background: ratioBg(chk.extra, RR) }}>{chk.extra}</td><td style={td}>{f(chk.area, 4)}</td>
+          <thead><tr><th style={th}>Interior (mm)</th><th style={th}>Relación</th><th style={th}>Área (m²)</th><th style={th}>Dh = 2ab/(a+b) (mm)</th><th style={th}>v real (m/s)</th><th style={th}>ΔP (Pa/m)</th><th style={th}>Nota</th></tr></thead>
+          <tbody><tr style={{ background: 'var(--best)', fontWeight: 600 }}><td style={td}>{hN} × {wN}</td><td style={{ ...td, background: ratioBg(chk.extra, RR) }}>{chk.extra}</td><td style={td}>{f(chk.area, 4)}</td><td style={{ ...td, background: dBg((2 * hN * wN) / (hN + wN)) }}>{f((2 * hN * wN) / (hN + wN), 2)}</td>
             <td style={{ ...td, color: chk.v > rng.max + 1e-9 || chk.v < rng.min - 1e-9 ? 'var(--over)' : undefined }}>{f(chk.v)}</td><td style={td}>{f(chk.dp, 3)}</td><td style={td}>{chk.label}</td></tr></tbody></table></div>}
         {chk && ratioBg(chk.extra, RR) && <MessageBar intent={ratioBg(chk.extra, RR) === RED ? 'error' : 'warning'}><MessageBarBody>{ratioBg(chk.extra, RR) === RED ? 'La relación supera el límite 1:3,5.' : `La relación supera 1:${f(RR, 1)} (normal); el límite es 1:3,5.`}</MessageBarBody></MessageBar>}
         {chk && (chk.v < rng.min - 1e-9 || chk.v > rng.max + 1e-9) && <MessageBar intent="warning"><MessageBarBody>La velocidad {f(chk.v, 1)} m/s queda fuera del rango {rng.min > 0 ? `${rng.min}–` : 'máx. '}{rng.max} m/s.</MessageBarBody></MessageBar>}
