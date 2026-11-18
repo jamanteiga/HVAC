@@ -38,7 +38,7 @@ export function Module5() {
   const [q, setQ] = useState('3600'); const [v, setV] = useState('8'); const [loc, setLoc] = useState(''); const [mat, setMat] = useState('Acero galvanizado');
   const [crit, setCrit] = useState(''); const [mode, setMode] = useState<'exceso' | 'proximo'>('exceso'); const [tab, setTab] = useState('circ');
   const [rratio, setRratio] = useState('2'); const [oratio, setOratio] = useState('6');
-  const [spD, setSpD] = useState(''); const [circD, setCircD] = useState(''); const [diagD, setDiagD] = useState(''); const [fixH, setFixH] = useState(''); const [fixW, setFixW] = useState('');
+  const [spD, setSpD] = useState(''); const [circD, setCircD] = useState(''); const [diagD, setDiagD] = useState(''); const [diagC, setDiagC] = useState(''); const [diagS, setDiagS] = useState(''); const [fixH, setFixH] = useState(''); const [fixW, setFixW] = useState('');
   const [omax, setOmax] = useState(''); const [paste, setPaste] = useState(''); const [sel, setSel] = useState<string | null>(null);
   const locales = p.design.locales ?? defaultLocales(); const L = locales.find(l => l.name === loc); const C = CRITERIOS_VEL.find(c => c.name === crit);
   const rng = C ? { name: C.name, min: C.vMin, max: C.vMax } : L ? { name: L.name, min: L.vMin, max: L.vMax } : { name: '', min: 7, max: 10 };
@@ -51,17 +51,18 @@ export function Module5() {
   const circ = useMemo(() => valid ? circularOptions(Q, V, circS, ctx) : [], [Q, V, circS, ctx, valid]);
   const hN = parseNum(fixH) ?? 0, wN = parseNum(fixW) ?? 0; const both = hN > 0 && wN > 0;
   const DD = parseNum(diagD) ?? 0; const dReq = valid ? Math.sqrt((4 * A) / Math.PI) * 1000 : 0;
-  const dBg = (d: number) => DD > 0 ? (d > DD + 1e-9 ? RED : GRN) : undefined; // verde si ≤ Ø del diagrama, rojo si lo supera
+  const bgFor = (dd: number) => (d: number) => dd > 0 ? (d > dd + 1e-9 ? RED : GRN) : undefined; // verde si ≤ Ø del diagrama, rojo si lo supera
+  const DC = parseNum(diagC) ?? 0, DS = parseNum(diagS) ?? 0; const dBg = bgFor(DD), dBgC = bgFor(DC), dBgS = bgFor(DS);
   const cD = parseNum(circD) ?? 0; const cchk = valid && cD > 0 ? circCheck(Q, V, ctx, cD) : null;
   const spRows = useMemo(() => valid ? SPIRO.map(x => ({ ...circCheck(Q, V, ctx, x.di), e: x.e })) : [], [Q, V, ctx, valid]);
   const spBest = spRows.findIndex(r => r.v <= V * (1 + 1e-9));
   const spSel = spRows.find(r => String(r.d) === spD) ?? null;
-  const reqLine = valid && ( <Text style={{ background: dBg(dReq), padding: '4px 8px', borderRadius: 4, width: 'fit-content' }}>Caudal y velocidad → área necesaria <b>{f(A, 4)} m²</b> · Ø hidráulico necesario <b>{f(dReq, 2)} mm</b>{DD > 0 && <> · diagrama <b>{f(DD, 0)} mm</b> ({dReq > DD + 1e-9 ? 'lo supera' : 'dentro'})</>}</Text>);
+  const reqLineFor = (dd: number, bg: (d: number) => string | undefined) => valid && ( <Text style={{ background: bg(dReq), padding: '4px 8px', borderRadius: 4, width: 'fit-content' }}>Caudal y velocidad → área necesaria <b>{f(A, 4)} m²</b> · Ø hidráulico necesario <b>{f(dReq, 2)} mm</b>{dd > 0 && <> · diagrama <b>{f(dd, 0)} mm</b> ({dReq > dd + 1e-9 ? 'lo supera' : 'dentro'})</>}</Text>);
+  const reqLine = reqLineFor(DD, dBg);
   const chk = valid && both ? rectCheck(Q, V, ctx, hN, wN, 3.5) : null;
   const rect = useMemo(() => valid ? rectOptions(Q, V, ctx, { min: 100, maxH: 1000, stepH: 50, mode, fixH: both ? null : parseNum(fixH), fixW: both ? null : parseNum(fixW), maxRatio: RR }) : [], [Q, V, ctx, rratio, mode, fixH, fixW, both, valid]);
   const oval = useMemo(() => valid ? ovalOptions(Q, V, ovalT, ctx, { maxMinor: parseNum(omax), maxRatio: parseNum(oratio) ?? 6, mode }) : [], [Q, V, ovalT, ctx, omax, oratio, mode, valid]);
   const num = (val: string, set: (s: string) => void) => <Input value={val} onChange={(_, x) => set(x.value)} />;
-  const diagField = <Field label="Ø del diagrama (mm)">{num(diagD, setDiagD)}</Field>;
   const ovalRows = useMemo(() => ovalT.map((t, i) => ({ ...t, uid: String(i) })), [ovalT]);
   const ovalCols: ColDef[] = [numCol('minor', 'Eje menor (mm)', { d: 0, flex: 1 }), numCol('major', 'Eje mayor (mm)', { d: 0, flex: 1 })];
   const best = (r: Opt[]) => r.find(x => x.best);
@@ -98,24 +99,24 @@ export function Module5() {
         <Tab value="circ">Circular (Ø normalizados)</Tab><Tab value="espiro">Espiro (Spiroduct)</Tab><Tab value="rect">Rectangular (múltiplos de 5)</Tab><Tab value="oval">Oval plano (normalizados)</Tab><Tab value="tablas">Tablas normalizadas</Tab>
       </TabList>
       {tab === 'circ' && <Card><Subtitle2>Diámetros interiores normalizados</Subtitle2>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(190px,1fr))', gap: 10 }}>{diagField}<Field label="Diámetro interior manual (mm, opc.)">{num(circD, setCircD)}</Field></div>
-        {reqLine}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(190px,1fr))', gap: 10 }}><Field label="Ø del diagrama (mm)">{num(diagC, setDiagC)}</Field><Field label="Diámetro interior manual (mm, opc.)">{num(circD, setCircD)}</Field></div>
+        {reqLineFor(DC, dBgC)}
         {cchk && <div style={{ overflow: 'auto' }}><table style={{ borderCollapse: 'collapse', fontSize: 13 }}>
           <thead><tr><th style={th}>Ø interior (mm)</th><th style={th}>Espesor e (mm)</th><th style={th}>Área (m²)</th><th style={th}>v real (m/s)</th><th style={th}>ΔP (Pa/m)</th><th style={th}>Nota</th></tr></thead>
-          <tbody><tr style={{ background: 'var(--best)', fontWeight: 600 }}><td style={{ ...td, background: dBg(cD) }}>Ø {f(cD, cD % 1 ? 1 : 0)}</td><td style={td}>{spiroThickness(cD) ?? '—'}</td><td style={td}>{f(cchk.area, 4)}</td>
+          <tbody><tr style={{ background: 'var(--best)', fontWeight: 600 }}><td style={{ ...td, background: dBgC(cD) }}>Ø {f(cD, cD % 1 ? 1 : 0)}</td><td style={td}>{spiroThickness(cD) ?? '—'}</td><td style={td}>{f(cchk.area, 4)}</td>
             <td style={{ ...td, color: cchk.v > rng.max + 1e-9 ? 'var(--over)' : undefined }}>{f(cchk.v)}</td><td style={td}>{f(cchk.dp, 3)}</td><td style={td}>{cchk.label}</td></tr></tbody></table></div>}
         {cchk && <Subtitle2>Normalizados</Subtitle2>}
-        <Result rows={circ} kind="circ" vt={V} dBg={dBg} /></Card>}
+        <Result rows={circ} kind="circ" vt={V} dBg={dBgC} /></Card>}
       {tab === 'espiro' && <Card><Subtitle2>Conducto espiro Spiroduct — acero galvanizado</Subtitle2>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(190px,1fr))', gap: 10 }}>
-          {diagField}<Field label="Diámetro interior (lista normalizada)"><Dropdown value={spD ? `Ø ${spD}` : '— elegir —'} selectedOptions={[spD]} onOptionSelect={(_, o) => setSpD((o.optionValue as string) ?? '')}>
+          <Field label="Ø del diagrama (mm)">{num(diagS, setDiagS)}</Field><Field label="Diámetro interior (lista normalizada)"><Dropdown value={spD ? `Ø ${spD}` : '— elegir —'} selectedOptions={[spD]} onOptionSelect={(_, o) => setSpD((o.optionValue as string) ?? '')}>
             <Option value="">— elegir —</Option>{SPIRO.map(x => <Option key={x.di} value={String(x.di)}>{`Ø ${x.di}`}</Option>)}</Dropdown></Field></div>
-        {reqLine}
-        {spSel && <Text style={{ background: dBg(spSel.d ?? 0) ?? 'var(--best)', padding: '6px 10px', borderRadius: 4, width: 'fit-content', fontWeight: 600 }}>Ø {spSel.d} · espesor {String(spSel.e).replace('.', ',')} mm · área {f(spSel.area, 4)} m² · v real <span style={{ color: spSel.v > rng.max + 1e-9 ? 'var(--over)' : undefined }}>{f(spSel.v)} m/s</span> · ΔP {f(spSel.dp, 3)} Pa/m</Text>}
+        {reqLineFor(DS, dBgS)}
+        {spSel && <Text style={{ background: dBgS(spSel.d ?? 0) ?? 'var(--best)', padding: '6px 10px', borderRadius: 4, width: 'fit-content', fontWeight: 600 }}>Ø {spSel.d} · espesor {String(spSel.e).replace('.', ',')} mm · área {f(spSel.area, 4)} m² · v real <span style={{ color: spSel.v > rng.max + 1e-9 ? 'var(--over)' : undefined }}>{f(spSel.v)} m/s</span> · ΔP {f(spSel.dp, 3)} Pa/m</Text>}
         {!valid ? <MessageBar intent="warning"><MessageBarBody>Introduce caudal y velocidad.</MessageBarBody></MessageBar> : <div style={{ overflow: 'auto' }}><table style={{ borderCollapse: 'collapse', fontSize: 13, width: '100%' }}>
           <thead><tr><th style={th}>Ø interior (mm)</th><th style={th}>Espesor e (mm)</th><th style={th}>Área (m²)</th><th style={th}>v real (m/s)</th><th style={th}>Desv. vs objetivo</th><th style={th}>ΔP (Pa/m)</th><th style={th}>Nota</th></tr></thead>
           <tbody>{spRows.map((r, i) => (<tr key={i} style={{ background: i === spBest ? 'var(--best)' : String(r.d) === spD ? 'var(--hdr)' : undefined, fontWeight: i === spBest ? 600 : 400 }}>
-            <td style={{ ...td, background: dBg(r.d ?? 0) }}>Ø {r.d}</td><td style={td}>{String(r.e).replace('.', ',')}</td><td style={td}>{f(r.area, 4)}</td>
+            <td style={{ ...td, background: dBgS(r.d ?? 0) }}>Ø {r.d}</td><td style={td}>{String(r.e).replace('.', ',')}</td><td style={td}>{f(r.area, 4)}</td>
             <td style={{ ...td, color: r.v > V * 1.0000001 ? 'var(--over)' : undefined }}>{f(r.v)}</td><td style={td}>{r.dev >= 0 ? '+' : ''}{f(r.dev * 100, 1)} %</td><td style={td}>{f(r.dp, 3)}</td><td style={td}>{i === spBest ? 'Recomendado (v ≤ objetivo)' : ''}</td></tr>))}</tbody></table>
           {spBest < 0 && <MessageBar intent="warning"><MessageBarBody>Ningún Spiroduct de la tabla (hasta Ø315) cumple la velocidad con este caudal; usa el circular normalizado.</MessageBarBody></MessageBar>}</div>}
       </Card>}
