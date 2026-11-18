@@ -103,7 +103,7 @@ export function Module5() {
         {cchk && <div style={{ overflow: 'auto' }}><table style={{ borderCollapse: 'collapse', fontSize: 13 }}>
           <thead><tr><th style={th}>Ø interior (mm)</th><th style={th}>Espesor e (mm)</th><th style={th}>Área (m²)</th><th style={th}>v real (m/s)</th><th style={th}>ΔP (Pa/m)</th><th style={th}>Nota</th></tr></thead>
           <tbody><tr style={{ background: 'var(--best)', fontWeight: 600 }}><td style={{ ...td, background: dBg(cD) }}>Ø {f(cD, cD % 1 ? 1 : 0)}</td><td style={td}>{spiroThickness(cD) ?? '—'}</td><td style={td}>{f(cchk.area, 4)}</td>
-            <td style={{ ...td, color: cchk.v > rng.max + 1e-9 || cchk.v < rng.min - 1e-9 ? 'var(--over)' : undefined }}>{f(cchk.v)}</td><td style={td}>{f(cchk.dp, 3)}</td><td style={td}>{cchk.label}</td></tr></tbody></table></div>}
+            <td style={{ ...td, color: cchk.v > rng.max + 1e-9 ? 'var(--over)' : undefined }}>{f(cchk.v)}</td><td style={td}>{f(cchk.dp, 3)}</td><td style={td}>{cchk.label}</td></tr></tbody></table></div>}
         {cchk && <Subtitle2>Normalizados</Subtitle2>}
         <Result rows={circ} kind="circ" vt={V} dBg={dBg} /></Card>}
       {tab === 'espiro' && <Card><Subtitle2>Conducto espiro Spiroduct — acero galvanizado</Subtitle2>
@@ -111,7 +111,7 @@ export function Module5() {
           {diagField}<Field label="Diámetro interior (lista normalizada)"><Dropdown value={spD ? `Ø ${spD}` : '— elegir —'} selectedOptions={[spD]} onOptionSelect={(_, o) => setSpD((o.optionValue as string) ?? '')}>
             <Option value="">— elegir —</Option>{SPIRO.map(x => <Option key={x.di} value={String(x.di)}>{`Ø ${x.di}`}</Option>)}</Dropdown></Field></div>
         {reqLine}
-        {spSel && <Text style={{ background: dBg(spSel.d ?? 0) ?? 'var(--best)', padding: '6px 10px', borderRadius: 4, width: 'fit-content', fontWeight: 600 }}>Ø {spSel.d} · espesor {String(spSel.e).replace('.', ',')} mm · área {f(spSel.area, 4)} m² · v real <span style={{ color: spSel.v > rng.max + 1e-9 || spSel.v < rng.min - 1e-9 ? 'var(--over)' : undefined }}>{f(spSel.v)} m/s</span> · ΔP {f(spSel.dp, 3)} Pa/m</Text>}
+        {spSel && <Text style={{ background: dBg(spSel.d ?? 0) ?? 'var(--best)', padding: '6px 10px', borderRadius: 4, width: 'fit-content', fontWeight: 600 }}>Ø {spSel.d} · espesor {String(spSel.e).replace('.', ',')} mm · área {f(spSel.area, 4)} m² · v real <span style={{ color: spSel.v > rng.max + 1e-9 ? 'var(--over)' : undefined }}>{f(spSel.v)} m/s</span> · ΔP {f(spSel.dp, 3)} Pa/m</Text>}
         {!valid ? <MessageBar intent="warning"><MessageBarBody>Introduce caudal y velocidad.</MessageBarBody></MessageBar> : <div style={{ overflow: 'auto' }}><table style={{ borderCollapse: 'collapse', fontSize: 13, width: '100%' }}>
           <thead><tr><th style={th}>Ø interior (mm)</th><th style={th}>Espesor e (mm)</th><th style={th}>Área (m²)</th><th style={th}>v real (m/s)</th><th style={th}>Desv. vs objetivo</th><th style={th}>ΔP (Pa/m)</th><th style={th}>Nota</th></tr></thead>
           <tbody>{spRows.map((r, i) => (<tr key={i} style={{ background: i === spBest ? 'var(--best)' : String(r.d) === spD ? 'var(--hdr)' : undefined, fontWeight: i === spBest ? 600 : 400 }}>
@@ -128,9 +128,9 @@ export function Module5() {
         {chk && <div style={{ overflow: 'auto' }}><table style={{ borderCollapse: 'collapse', fontSize: 13 }}>
           <thead><tr><th style={th}>Interior (mm)</th><th style={th}>Relación</th><th style={th}>Área (m²)</th><th style={th}>Dh = 2ab/(a+b) (mm)</th><th style={th}>v real (m/s)</th><th style={th}>ΔP (Pa/m)</th><th style={th}>Nota</th></tr></thead>
           <tbody><tr style={{ background: 'var(--best)', fontWeight: 600 }}><td style={td}>{hN} × {wN}</td><td style={{ ...td, background: ratioBg(chk.extra, RR) }}>{chk.extra}</td><td style={td}>{f(chk.area, 4)}</td><td style={{ ...td, background: dBg((2 * hN * wN) / (hN + wN)) }}>{f((2 * hN * wN) / (hN + wN), 2)}</td>
-            <td style={{ ...td, color: chk.v > rng.max + 1e-9 || chk.v < rng.min - 1e-9 ? 'var(--over)' : undefined }}>{f(chk.v)}</td><td style={td}>{f(chk.dp, 3)}</td><td style={td}>{chk.label}</td></tr></tbody></table></div>}
+            <td style={{ ...td, color: chk.v > rng.max + 1e-9 ? 'var(--over)' : undefined }}>{f(chk.v)}</td><td style={td}>{f(chk.dp, 3)}</td><td style={td}>{chk.label}</td></tr></tbody></table></div>}
         {chk && ratioBg(chk.extra, RR) && <MessageBar intent={ratioBg(chk.extra, RR) === RED ? 'error' : 'warning'}><MessageBarBody>{ratioBg(chk.extra, RR) === RED ? 'La relación supera el límite 1:3,5.' : `La relación supera 1:${f(RR, 1)} (normal); el límite es 1:3,5.`}</MessageBarBody></MessageBar>}
-        {chk && (chk.v < rng.min - 1e-9 || chk.v > rng.max + 1e-9) && <MessageBar intent="warning"><MessageBarBody>La velocidad {f(chk.v, 1)} m/s queda fuera del rango {rng.min > 0 ? `${rng.min}–` : 'máx. '}{rng.max} m/s.</MessageBarBody></MessageBar>}
+        {chk && chk.v > rng.max + 1e-9 && <MessageBar intent="warning"><MessageBarBody>La velocidad {f(chk.v, 1)} m/s supera el máximo de {rng.max} m/s.</MessageBarBody></MessageBar>}
         {chk && <Subtitle2>Alternativas</Subtitle2>}
         <Result rows={rect} kind="dim" vt={V} lim={RR} /></Card>}
       {tab === 'oval' && <Card><Subtitle2>Oval plano — menor eje a cada medida normalizada</Subtitle2>
