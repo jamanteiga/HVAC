@@ -31,19 +31,20 @@ export function Module5() {
   const { project: p, setTables } = useStore();
   const [q, setQ] = useState('3600'); const [v, setV] = useState('8'); const [loc, setLoc] = useState(''); const [mat, setMat] = useState('Acero galvanizado');
   const [mode, setMode] = useState<'exceso' | 'proximo'>('exceso'); const [tab, setTab] = useState('circ');
-  const [rratio, setRratio] = useState('3.5'); const [oratio, setOratio] = useState('6');
+  const [rratio, setRratio] = useState('2'); const [oratio, setOratio] = useState('6');
   const [fixH, setFixH] = useState(''); const [fixW, setFixW] = useState('');
   const [omax, setOmax] = useState(''); const [paste, setPaste] = useState(''); const [sel, setSel] = useState<string | null>(null);
   const locales = p.design.locales ?? defaultLocales(); const L = locales.find(l => l.name === loc);
   const Q = parseNum(q) ?? 0, V = parseNum(v) ?? 0;
+  const rRaw = parseNum(rratio); const RR = Math.min(rRaw && rRaw >= 1 ? rRaw : 2, 3.5); const rOver = !!rRaw && rRaw > 3.5;
   const valid = Q > 0 && V > 0;
   const ctx = useMemo(() => ({ rough: p.materials.find(m => m.name === mat)?.roughness ?? 0.15, tC: p.design.tIntVerano, p: p.design.presion }), [p.materials, mat, p.design]);
   const circS = p.circSizes ?? R20_SERIES; const ovalT = p.ovalSizes ?? provisionalOval(); const provisional = !p.ovalSizes;
   const A = valid ? requiredArea(Q, V) : 0;
   const circ = useMemo(() => valid ? circularOptions(Q, V, circS, ctx) : [], [Q, V, circS, ctx, valid]);
   const hN = parseNum(fixH) ?? 0, wN = parseNum(fixW) ?? 0; const both = hN > 0 && wN > 0;
-  const chk = valid && both ? rectCheck(Q, V, ctx, hN, wN, parseNum(rratio) ?? 3.5) : null;
-  const rect = useMemo(() => valid ? rectOptions(Q, V, ctx, { min: 100, maxH: 1000, stepH: 50, mode, fixH: both ? null : parseNum(fixH), fixW: both ? null : parseNum(fixW), maxRatio: parseNum(rratio) ?? 3.5 }) : [], [Q, V, ctx, rratio, mode, fixH, fixW, both, valid]);
+  const chk = valid && both ? rectCheck(Q, V, ctx, hN, wN, RR) : null;
+  const rect = useMemo(() => valid ? rectOptions(Q, V, ctx, { min: 100, maxH: 1000, stepH: 50, mode, fixH: both ? null : parseNum(fixH), fixW: both ? null : parseNum(fixW), maxRatio: RR }) : [], [Q, V, ctx, rratio, mode, fixH, fixW, both, valid]);
   const oval = useMemo(() => valid ? ovalOptions(Q, V, ovalT, ctx, { maxMinor: parseNum(omax), maxRatio: parseNum(oratio) ?? 6, mode }) : [], [Q, V, ovalT, ctx, omax, oratio, mode, valid]);
   const num = (val: string, set: (s: string) => void) => <Input value={val} onChange={(_, x) => set(x.value)} />;
   const ovalRows = useMemo(() => ovalT.map((t, i) => ({ ...t, uid: String(i) })), [ovalT]);
@@ -57,6 +58,7 @@ export function Module5() {
         <Title3>Dimensionado rápido — medidas interiores</Title3>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(190px,1fr))', gap: 12 }}>
           <Field label="Caudal (m³/h)">{num(q, setQ)}</Field>
+          <Field label="Relación máx. rectangular (1:x)" validationState={rOver ? 'warning' : 'none'} validationMessage={rOver ? 'Máximo 1:3,5 (se aplica 3,5)' : undefined}>{num(rratio, setRratio)}</Field>
           <Field label="Local (velocidad de diseño)"><Dropdown value={loc || '— libre —'} selectedOptions={[loc]} onOptionSelect={(_, o) => { const n = (o.optionValue as string) ?? ''; setLoc(n); const l = locales.find(x => x.name === n); if (l) setV(String(l.vTarget)); }}>
             <Option value="">— libre —</Option>{locales.map(l => <Option key={l.name} value={l.name}>{l.name}</Option>)}</Dropdown></Field>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}><Field label="Velocidad (m/s) — rango 7 a 10">{num(v, setV)}</Field>
@@ -74,7 +76,7 @@ export function Module5() {
       </Card>
       {Q > 0 && <Card><Subtitle2>Comparativa 7 – 10 m/s (mismo caudal)</Subtitle2>
         <table style={{ borderCollapse: 'collapse', fontSize: 13 }}><thead><tr>{['v (m/s)', 'Área (m²)', 'Circular', 'Rectangular (más próx.)', 'Oval (más próx.)'].map(h => <th key={h} style={th}>{h}</th>)}</tr></thead>
-          <tbody>{[7, 8, 9, 10].map(x => { const c = circularOptions(Q, x, circS, ctx).find(o => o.best); const r = rectOptions(Q, x, ctx, { min: 100, maxH: 1000, stepH: 50, mode, maxRatio: parseNum(rratio) ?? 3.5 }).find(o => o.best); const o = ovalOptions(Q, x, ovalT, ctx, { maxMinor: parseNum(omax), maxRatio: parseNum(oratio) ?? 6, mode }).find(z => z.best);
+          <tbody>{[7, 8, 9, 10].map(x => { const c = circularOptions(Q, x, circS, ctx).find(o => o.best); const r = rectOptions(Q, x, ctx, { min: 100, maxH: 1000, stepH: 50, mode, maxRatio: RR }).find(o => o.best); const o = ovalOptions(Q, x, ovalT, ctx, { maxMinor: parseNum(omax), maxRatio: parseNum(oratio) ?? 6, mode }).find(z => z.best);
             return <tr key={x} style={{ background: x === V ? 'var(--best)' : undefined }}><td style={td}>{x}</td><td style={td}>{f(requiredArea(Q, x), 4)}</td><td style={td}>{c ? `Ø ${c.d}` : '—'}</td><td style={td}>{r ? `${r.a} × ${r.b}` : '—'}</td><td style={td}>{o ? `${o.a} × ${o.b}` : '—'}</td></tr>; })}</tbody></table></Card>}
       <TabList selectedValue={tab} onTabSelect={(_, d) => setTab(d.value as string)}>
         <Tab value="circ">Circular (Ø normalizados)</Tab><Tab value="rect">Rectangular (múltiplos de 5)</Tab><Tab value="oval">Oval plano (normalizados)</Tab><Tab value="tablas">Tablas normalizadas</Tab>
@@ -82,8 +84,7 @@ export function Module5() {
       {tab === 'circ' && <Card><Subtitle2>Diámetros interiores normalizados</Subtitle2><Result rows={circ} kind="circ" vt={V} /></Card>}
       {tab === 'rect' && <Card><Subtitle2>Rectangular — ambos lados terminados en 0 o 5</Subtitle2>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))', gap: 10 }}>
-          <Field label="Alto (mm)">{num(fixH, setFixH)}</Field><Field label="Ancho (mm)">{num(fixW, setFixW)}</Field>
-          <Field label="Relación máx. (1:x)">{num(rratio, setRratio)}</Field></div>
+          <Field label="Alto (mm)">{num(fixH, setFixH)}</Field><Field label="Ancho (mm)">{num(fixW, setFixW)}</Field></div>
         <Text size={200} style={{ color: 'var(--subtle)' }}>Indica alto y ancho para calcular la velocidad con el caudal; con solo uno se calcula el otro lado; sin ninguno se muestran alternativas.</Text>
         {chk && <div style={{ overflow: 'auto' }}><table style={{ borderCollapse: 'collapse', fontSize: 13 }}>
           <thead><tr><th style={th}>Interior (mm)</th><th style={th}>Relación</th><th style={th}>Área (m²)</th><th style={th}>v real (m/s)</th><th style={th}>ΔP (Pa/m)</th><th style={th}>Nota</th></tr></thead>
