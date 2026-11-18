@@ -7,6 +7,7 @@ import { Module3 } from './ui/Module3';
 import { Module4 } from './ui/Module4';
 import { Module5 } from './ui/Module5';
 import { Module6 } from './ui/Module6';
+import { Module7 } from './ui/Module7';
 import { useStore } from './store';
 import { PALETTES, ThemeId, applyPalette, fluentTheme, useUi } from './theme';
 
@@ -28,6 +29,7 @@ export default function App() {
             <Tab value="4" icon={<I4 />}>4 · Proyectos</Tab>
             <Tab value="5" icon={<I5 />}>5 · Dimensionado rápido</Tab>
             <Tab value="6" icon={<I6 />}>6 · Pesos de conductos</Tab>
+            <Tab value="7" icon={<I3 />}>7 · Red de conductos (beta)</Tab>
           </TabList>
           <div style={{ marginTop: 'auto', padding: '0 8px' }}>
             <Text size={200} style={{ color: 'var(--subtle)' }}>Fondo</Text>
@@ -41,7 +43,7 @@ export default function App() {
             <Text weight="semibold" size={500}>{d.nombre || 'Proyecto sin nombre'}</Text>
             <Text style={{ color: 'var(--subtle)' }}>{[d.codigo, d.buque, d.tipoBuque].filter(Boolean).join(' · ')}</Text>
           </div>
-          <div style={{ flex: 1, minHeight: 0 }}>{m === '1' && <Module1 />}{m === '2' && <Module2 />}{m === '3' && <Module3 />}{m === '4' && <Module4 />}{m === '5' && <Module5 />}{m === '6' && <Module6 />}</div>
+          <div style={{ flex: 1, minHeight: 0 }}>{m === '1' && <Module1 />}{m === '2' && <Module2 />}{m === '3' && <Module3 />}{m === '4' && <Module4 />}{m === '5' && <Module5 />}{m === '6' && <Module6 />}{m === '7' && <Module7 />}</div>
         </main>
       </div>
     </FluentProvider>
