@@ -61,6 +61,13 @@ export function rectOptions(q: number, vt: number, ctx: Ctx, o: RectOpts): Opt[]
   return [...out.map(r => ({ ...r, best: false })), ...sweep];
 }
 
+/** Comprobación de un rectangular dado (mm): velocidad real, relación y ΔP para el caudal q. */
+export function rectCheck(q: number, vt: number, ctx: Ctx, H: number, W: number, maxRatio: number): Opt {
+  const r = mk('Rectangular', q, vt, ctx, { a: H, b: W }, (H * W) / 1e6);
+  const ratio = Math.max(H, W) / Math.min(H, W); r.extra = `${ratio.toFixed(2)}:1`;
+  r.label = ratio > maxRatio + 1e-9 ? `Supera 1:${maxRatio}` : 'Medida indicada'; return r;
+}
+
 export interface OvalOpts { maxMinor?: number | null; maxRatio: number; mode: 'exceso' | 'proximo' }
 /** Ovales de la tabla: por cada eje menor, el menor eje mayor que cumple. */
 export function ovalOptions(q: number, vt: number, table: { minor: number; major: number }[], ctx: Ctx, o: OvalOpts): Opt[] {

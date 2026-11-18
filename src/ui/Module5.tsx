@@ -4,7 +4,7 @@ import { ColDef } from 'ag-grid-community';
 import { useStore } from '../store';
 import { DataGrid, numCol, parseNum } from './DataGrid';
 import { defaultLocales } from '../engine/defaults';
-import { circularOptions, rectOptions, ovalOptions, provisionalOval, R20_SERIES, requiredArea, parseOvalTable, Opt } from '../engine/quick';
+import { circularOptions, rectOptions, rectCheck, ovalOptions, provisionalOval, R20_SERIES, requiredArea, parseOvalTable, Opt } from '../engine/quick';
 
 const f = (v: number, d = 2) => v.toLocaleString('es-ES', { minimumFractionDigits: d, maximumFractionDigits: d });
 const th: React.CSSProperties = { textAlign: 'left', padding: '6px 12px', background: 'var(--hdr)', borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap' };
@@ -31,7 +31,7 @@ export function Module5() {
   const { project: p, setTables } = useStore();
   const [q, setQ] = useState('3600'); const [v, setV] = useState('8'); const [loc, setLoc] = useState(''); const [mat, setMat] = useState('Acero galvanizado');
   const [mode, setMode] = useState<'exceso' | 'proximo'>('exceso'); const [tab, setTab] = useState('circ');
-  const [rmin, setRmin] = useState('100'); const [rmax, setRmax] = useState('1000'); const [rstep, setRstep] = useState('50'); const [rratio, setRratio] = useState('3.5'); const [oratio, setOratio] = useState('6');
+  const [rratio, setRratio] = useState('3.5'); const [oratio, setOratio] = useState('6');
   const [fixH, setFixH] = useState(''); const [fixW, setFixW] = useState('');
   const [omax, setOmax] = useState(''); const [paste, setPaste] = useState(''); const [sel, setSel] = useState<string | null>(null);
   const locales = p.design.locales ?? defaultLocales(); const L = locales.find(l => l.name === loc);
@@ -41,7 +41,9 @@ export function Module5() {
   const circS = p.circSizes ?? R20_SERIES; const ovalT = p.ovalSizes ?? provisionalOval(); const provisional = !p.ovalSizes;
   const A = valid ? requiredArea(Q, V) : 0;
   const circ = useMemo(() => valid ? circularOptions(Q, V, circS, ctx) : [], [Q, V, circS, ctx, valid]);
-  const rect = useMemo(() => valid ? rectOptions(Q, V, ctx, { min: parseNum(rmin) ?? 100, maxH: parseNum(rmax) ?? 1000, stepH: Math.max(5, parseNum(rstep) ?? 50), mode, fixH: parseNum(fixH), fixW: parseNum(fixW), maxRatio: parseNum(rratio) ?? 3.5 }) : [], [Q, V, ctx, rmin, rmax, rstep, rratio, mode, fixH, fixW, valid]);
+  const hN = parseNum(fixH) ?? 0, wN = parseNum(fixW) ?? 0; const both = hN > 0 && wN > 0;
+  const chk = valid && both ? rectCheck(Q, V, ctx, hN, wN, parseNum(rratio) ?? 3.5) : null;
+  const rect = useMemo(() => valid ? rectOptions(Q, V, ctx, { min: 100, maxH: 1000, stepH: 50, mode, fixH: both ? null : parseNum(fixH), fixW: both ? null : parseNum(fixW), maxRatio: parseNum(rratio) ?? 3.5 }) : [], [Q, V, ctx, rratio, mode, fixH, fixW, both, valid]);
   const oval = useMemo(() => valid ? ovalOptions(Q, V, ovalT, ctx, { maxMinor: parseNum(omax), maxRatio: parseNum(oratio) ?? 6, mode }) : [], [Q, V, ovalT, ctx, omax, oratio, mode, valid]);
   const num = (val: string, set: (s: string) => void) => <Input value={val} onChange={(_, x) => set(x.value)} />;
   const ovalRows = useMemo(() => ovalT.map((t, i) => ({ ...t, uid: String(i) })), [ovalT]);
@@ -72,7 +74,7 @@ export function Module5() {
       </Card>
       {Q > 0 && <Card><Subtitle2>Comparativa 7 – 10 m/s (mismo caudal)</Subtitle2>
         <table style={{ borderCollapse: 'collapse', fontSize: 13 }}><thead><tr>{['v (m/s)', 'Área (m²)', 'Circular', 'Rectangular (más próx.)', 'Oval (más próx.)'].map(h => <th key={h} style={th}>{h}</th>)}</tr></thead>
-          <tbody>{[7, 8, 9, 10].map(x => { const c = circularOptions(Q, x, circS, ctx).find(o => o.best); const r = rectOptions(Q, x, ctx, { min: parseNum(rmin) ?? 100, maxH: parseNum(rmax) ?? 1000, stepH: Math.max(5, parseNum(rstep) ?? 50), mode, maxRatio: parseNum(rratio) ?? 3.5 }).find(o => o.best); const o = ovalOptions(Q, x, ovalT, ctx, { maxMinor: parseNum(omax), maxRatio: parseNum(oratio) ?? 6, mode }).find(z => z.best);
+          <tbody>{[7, 8, 9, 10].map(x => { const c = circularOptions(Q, x, circS, ctx).find(o => o.best); const r = rectOptions(Q, x, ctx, { min: 100, maxH: 1000, stepH: 50, mode, maxRatio: parseNum(rratio) ?? 3.5 }).find(o => o.best); const o = ovalOptions(Q, x, ovalT, ctx, { maxMinor: parseNum(omax), maxRatio: parseNum(oratio) ?? 6, mode }).find(z => z.best);
             return <tr key={x} style={{ background: x === V ? 'var(--best)' : undefined }}><td style={td}>{x}</td><td style={td}>{f(requiredArea(Q, x), 4)}</td><td style={td}>{c ? `Ø ${c.d}` : '—'}</td><td style={td}>{r ? `${r.a} × ${r.b}` : '—'}</td><td style={td}>{o ? `${o.a} × ${o.b}` : '—'}</td></tr>; })}</tbody></table></Card>}
       <TabList selectedValue={tab} onTabSelect={(_, d) => setTab(d.value as string)}>
         <Tab value="circ">Circular (Ø normalizados)</Tab><Tab value="rect">Rectangular (múltiplos de 5)</Tab><Tab value="oval">Oval plano (normalizados)</Tab><Tab value="tablas">Tablas normalizadas</Tab>
@@ -80,9 +82,15 @@ export function Module5() {
       {tab === 'circ' && <Card><Subtitle2>Diámetros interiores normalizados</Subtitle2><Result rows={circ} kind="circ" vt={V} /></Card>}
       {tab === 'rect' && <Card><Subtitle2>Rectangular — ambos lados terminados en 0 o 5</Subtitle2>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))', gap: 10 }}>
-          <Field label="Alto fijo (mm, opc.)">{num(fixH, setFixH)}</Field><Field label="Ancho fijo (mm, opc.)">{num(fixW, setFixW)}</Field>
-          <Field label="Alto mín. (mm)">{num(rmin, setRmin)}</Field><Field label="Alto máx. (mm)">{num(rmax, setRmax)}</Field>
-          <Field label="Paso de alto (mm)">{num(rstep, setRstep)}</Field><Field label="Relación máx. (1:x)">{num(rratio, setRratio)}</Field></div>
+          <Field label="Alto (mm)">{num(fixH, setFixH)}</Field><Field label="Ancho (mm)">{num(fixW, setFixW)}</Field>
+          <Field label="Relación máx. (1:x)">{num(rratio, setRratio)}</Field></div>
+        <Text size={200} style={{ color: 'var(--subtle)' }}>Indica alto y ancho para calcular la velocidad con el caudal; con solo uno se calcula el otro lado; sin ninguno se muestran alternativas.</Text>
+        {chk && <div style={{ overflow: 'auto' }}><table style={{ borderCollapse: 'collapse', fontSize: 13 }}>
+          <thead><tr><th style={th}>Interior (mm)</th><th style={th}>Relación</th><th style={th}>Área (m²)</th><th style={th}>v real (m/s)</th><th style={th}>ΔP (Pa/m)</th><th style={th}>Nota</th></tr></thead>
+          <tbody><tr style={{ background: 'var(--best)', fontWeight: 600 }}><td style={td}>{hN} × {wN}</td><td style={td}>{chk.extra}</td><td style={td}>{f(chk.area, 4)}</td>
+            <td style={{ ...td, color: chk.v > 10 || chk.v < 7 ? 'var(--over)' : undefined }}>{f(chk.v)}</td><td style={td}>{f(chk.dp, 3)}</td><td style={td}>{chk.label}</td></tr></tbody></table></div>}
+        {chk && (chk.v < 7 || chk.v > 10) && <MessageBar intent="warning"><MessageBarBody>La velocidad {f(chk.v, 1)} m/s queda fuera del rango 7–10 m/s.</MessageBarBody></MessageBar>}
+        {chk && <Subtitle2>Alternativas</Subtitle2>}
         <Result rows={rect} kind="dim" vt={V} /></Card>}
       {tab === 'oval' && <Card><Subtitle2>Oval plano — menor eje a cada medida normalizada</Subtitle2>
         {provisional && <MessageBar intent="warning"><MessageBarBody>Tabla PROVISIONAL (eje menor R20 × eje mayor en pasos de 50). Sustitúyela por la del fabricante en «Tablas normalizadas».</MessageBarBody></MessageBar>}
