@@ -744,11 +744,39 @@
             tkexp:         { type: 'terminal', codigo: 'TKE', nombre: 'Tanque de expansión', cat: 'tanques', calc: 'deposito', puertos: P_TANQUE },
             tkreboses:     { type: 'terminal', codigo: 'TKR', nombre: 'Tanque de reboses / lodos', cat: 'tanques', calc: 'deposito', puertos: P_TANQUE },
             tkagua:        { type: 'terminal', codigo: 'TKW', nombre: 'Tanque de agua dulce / aljibe', cat: 'tanques', calc: 'deposito', puertos: P_TANQUE },
-            hidroforo:     { type: 'terminal', codigo: 'TKH', nombre: 'Tanque hidróforo (presurizado)', cat: 'tanques', calc: 'deposito', puertos: P_TANQUE }
+            hidroforo:     { type: 'terminal', codigo: 'TKH', nombre: 'Tanque hidróforo (presurizado)', cat: 'tanques', calc: 'deposito', puertos: P_TANQUE },
+            // ===== HVAC · ventilación naval (elementos de conducto) =====
+            // compuertas
+            hv_reg:   { type: 'equipo', codigo: 'CRG', nombre: 'Compuerta de regulación', cat: 'hv_compuertas', calc: 'equipo', puertos: [PA, PB], dpDef: 0.05, hvac: true },
+            hv_antir: { type: 'equipo', codigo: 'CAR', nombre: 'Compuerta antirretorno', cat: 'hv_compuertas', calc: 'equipo', puertos: [PA, PB], dpDef: 0.05, hvac: true },
+            hv_cf:    { type: 'equipo', codigo: 'CCF', nombre: 'Compuerta cortafuegos', cat: 'hv_compuertas', calc: 'equipo', puertos: [PA, PB], dpDef: 0.05, hvac: true },
+            hv_nbq:   { type: 'equipo', codigo: 'CNB', nombre: 'Compuerta estanca (NBQ)', cat: 'hv_compuertas', calc: 'equipo', puertos: [PA, PB], dpDef: 0.05, hvac: true },
+            hv_smoke: { type: 'equipo', codigo: 'CSM', nombre: 'Compuerta de humos (smoke)', cat: 'hv_compuertas', calc: 'equipo', puertos: [PA, PB], dpDef: 0.05, hvac: true },
+            hv_tormenta: { type: 'equipo', codigo: 'CTM', nombre: 'Cierre estanco a la intemperie (weathertight)', cat: 'hv_compuertas', calc: 'equipo', puertos: [PA, PB], dpDef: 0.05, hvac: true },
+            // equipos
+            hv_vent:  { type: 'equipo', codigo: 'VEN', nombre: 'Ventilador', cat: 'hv_equipos', calc: 'equipo', puertos: [PA, PB], dpDef: 0, hvac: true },
+            hv_sil:   { type: 'equipo', codigo: 'SIL', nombre: 'Silenciador', cat: 'hv_equipos', calc: 'equipo', puertos: [PA, PB], dpDef: 0.03, hvac: true },
+            hv_bat:   { type: 'equipo', codigo: 'BAT', nombre: 'Batería (calefacción / refrigeración)', cat: 'hv_equipos', calc: 'equipo', puertos: [PA, PB], dpDef: 0.1, hvac: true },
+            hv_filtro:{ type: 'equipo', codigo: 'FLT', nombre: 'Filtro de aire', cat: 'hv_equipos', calc: 'equipo', puertos: [PA, PB], dpDef: 0.15, hvac: true },
+            hv_fnbq:  { type: 'equipo', codigo: 'FNB', nombre: 'Filtro NBQ (carbón / HEPA)', cat: 'hv_equipos', calc: 'equipo', puertos: [PA, PB], dpDef: 0.5, hvac: true },
+            hv_uta:   { type: 'equipo', codigo: 'UTA', nombre: 'Unidad de tratamiento de aire (UTA / ATU)', cat: 'hv_equipos', calc: 'equipo', puertos: [PA, PB], dpDef: 0.3, hvac: true },
+            hv_afu:   { type: 'equipo', codigo: 'AFU', nombre: 'Unidad de aire fresco (AFU)', cat: 'hv_equipos', calc: 'equipo', puertos: [PA, PB], dpDef: 0.3, hvac: true },
+            // terminales (salida o entrada de aire de la red)
+            hv_dif:   { type: 'terminal', codigo: 'DIF', nombre: 'Difusor', cat: 'hv_terminales', calc: 'consumo', puertos: [PA], hvac: true },
+            hv_rimp:  { type: 'terminal', codigo: 'RIM', nombre: 'Rejilla de impulsión', cat: 'hv_terminales', calc: 'consumo', puertos: [PA], hvac: true },
+            hv_rext:  { type: 'terminal', codigo: 'REX', nombre: 'Rejilla de extracción', cat: 'hv_terminales', calc: 'consumo', puertos: [PA], hvac: true },
+            hv_wms:   { type: 'terminal', codigo: 'WMS', nombre: 'Wire mesh screen', cat: 'hv_terminales', calc: 'consumo', puertos: [PA], hvac: true },
+            hv_ja:    { type: 'terminal', codigo: 'TJA', nombre: 'Terminal tipo JA', cat: 'hv_terminales', calc: 'consumo', puertos: [PA], hvac: true },
+            hv_bell:  { type: 'terminal', codigo: 'BEM', nombre: 'Terminal Bellmouth', cat: 'hv_terminales', calc: 'consumo', puertos: [PA], hvac: true },
+            hv_tob:   { type: 'terminal', codigo: 'TOB', nombre: 'Tobera', cat: 'hv_terminales', calc: 'consumo', puertos: [PA], hvac: true },
+            hv_louver:{ type: 'terminal', codigo: 'LOU', nombre: 'Persiana exterior (louver)', cat: 'hv_terminales', calc: 'consumo', puertos: [PA], hvac: true },
+            hv_toma:  { type: 'terminal', codigo: 'TEX', nombre: 'Toma / descarga de aire exterior', cat: 'hv_terminales', calc: 'consumo', puertos: [PA], hvac: true }
         };
+        // HVAC: los accesorios de PIPING que valen para conductos se reutilizan con nombre de conducto
+        [['codo90', 'Codo 90°'], ['codo45', 'Codo 45°'], ['codo60', 'Codo 60°'], ['curva', 'Curva de conducto'], ['tee', 'Derivación en T'], ['cruce', 'Cruce'], ['injerto', 'Derivación (injerto)'], ['reduccion', 'Reducción / transición'], ['junta', 'Junta flexible'], ['antivibratorio', 'Manguito antivibratorio']].forEach(([k, n]) => { if (TIPOS[k]) { TIPOS[k].nombre = n; TIPOS[k].cat = 'hv_accesorios'; } });
         // Subtipos de versiones anteriores
         const MIGRA_SUBTIPO = { codo: 'codo90', union: 'bridaunion' };
-        const CATEGORIAS = [['tuberias', 'Tuberías'], ['accesorios', 'Accesorios'], ['valvulas', 'Válvulas'], ['instrumentos', 'Instrumentos'], ['bombas', 'Bombas'], ['equipos', 'Equipos'], ['compensadores', 'Filtros, injertos y juntas'], ['terminales', 'Consumos'], ['anotaciones', 'Anotaciones']];
+        const CATEGORIAS = [['hv_accesorios', 'Accesorios de conducto'], ['hv_compuertas', 'Compuertas'], ['hv_equipos', 'Equipos'], ['hv_terminales', 'Terminales'], ['anotaciones', 'Anotaciones']];
         // Grupos que se muestran dentro de la categoría Accesorios de la librería
 
         // Tablas de Crane adicionales (se añaden al catálogo). Un valor numérico es el múltiplo n de
@@ -2124,6 +2152,31 @@
                     const cod = TIPOS[el.subtype].codigo;
                     return ln(10, 25, 11, 25) + ln(39, 25, 40, 25) + `<rect x="11" y="12" width="28" height="26" rx="1.5" ${st}/>` + ln(20, 12, 20, 38, 0.8) + ln(30, 12, 30, 38, 0.8) + (el.subtype === 'vtp' ? `<circle cx="25" cy="20" r="3" fill="none" stroke="${c}" stroke-width="0.9"/>` : `<path d="M 13 32 q 3 -2 6 0" fill="none" stroke="${c}" stroke-width="0.8"/>`) + `<text x="25" y="31" font-family="sans-serif" font-size="6" font-weight="bold" fill="${c}" text-anchor="middle">${cod}</text>`;
                 }
+                // ===== HVAC =====
+                case 'hv_reg': return stubs + `<rect x="13" y="15" width="24" height="20" ${st}/>` + ln(16, 31, 34, 19, 2) + ln(25, 15, 25, 9, 1.4) + ln(21, 9, 29, 9, 1.4);
+                case 'hv_antir': return stubs + `<rect x="13" y="15" width="24" height="20" ${st}/>` + ln(17, 19, 25, 25, 1.6) + ln(17, 31, 25, 25, 1.6) + ln(25, 25, 33, 25, 1.6) + `<polygon points="33,22 37,25 33,28" fill="${c}"/>`;
+                case 'hv_cf': case 'hv_nbq': case 'hv_smoke': case 'hv_tormenta': {
+                    const cod = TIPOS[el.subtype].codigo;
+                    return stubs + `<rect x="13" y="15" width="24" height="20" ${st}/>` + ln(13, 15, 37, 35, 1) + ln(13, 35, 37, 15, 1) + `<rect x="18" y="21" width="14" height="8" fill="${P.relleno}" stroke="none"/><text x="25" y="27.4" font-family="sans-serif" font-size="6.5" font-weight="bold" fill="${c}" text-anchor="middle">${cod}</text>`;
+                }
+                case 'hv_vent': return stubs + `<circle cx="25" cy="25" r="12" ${st}/>` + [0, 120, 240].map(a => { const r = (a - 90) * Math.PI / 180; return `<path d="M25 25 L${(25 + 9 * Math.cos(r)).toFixed(2)} ${(25 + 9 * Math.sin(r)).toFixed(2)} A9 9 0 0 1 ${(25 + 9 * Math.cos(r + 1.1)).toFixed(2)} ${(25 + 9 * Math.sin(r + 1.1)).toFixed(2)} Z" fill="${c}" fill-opacity="0.35" stroke="${c}" stroke-width="1"/>`; }).join('');
+                case 'hv_sil': return stubs + `<rect x="11" y="14" width="28" height="22" ${st}/>` + [17, 22, 27, 32].map(x => ln(x, 16, x, 34, 1.2)).join('');
+                case 'hv_bat': return stubs + `<rect x="13" y="14" width="24" height="22" ${st}/><polyline points="13,25 17,18 21,32 25,18 29,32 33,18 37,25" fill="none" stroke="${c}" stroke-width="1.2"/>`;
+                case 'hv_filtro': return stubs + `<rect x="15" y="13" width="20" height="24" ${st}/>` + [19, 25, 31].map(x => `<line x1="${x}" y1="13" x2="${x}" y2="37" stroke="${c}" stroke-width="1" stroke-dasharray="2,1.5"/>`).join('');
+                case 'hv_fnbq': return stubs + `<rect x="15" y="13" width="20" height="24" ${st}/>` + [19, 25, 31].map(x => `<line x1="${x}" y1="13" x2="${x}" y2="37" stroke="${c}" stroke-width="1" stroke-dasharray="2,1.5"/>`).join('') + `<text x="25" y="46" font-family="sans-serif" font-size="5.5" font-weight="bold" fill="${c}" text-anchor="middle">NBQ</text>`;
+                case 'hv_uta': case 'hv_afu': {
+                    const cod = TIPOS[el.subtype].codigo;
+                    return stubs + `<rect x="11" y="13" width="28" height="24" rx="1.5" ${st}/>` + ln(11, 25, 39, 25, 0.8) + `<text x="25" y="22.5" font-family="sans-serif" font-size="7" font-weight="bold" fill="${c}" text-anchor="middle">${cod}</text><polyline points="14,31 17,28 20,34 23,28 26,34 29,28 32,34 35,31" fill="none" stroke="${c}" stroke-width="1"/>`;
+                }
+                case 'hv_dif': return ln(10, 25, 20, 25, 2) + `<polygon points="20,20 20,30 36,39 36,11" ${st}/>` + ln(28, 25, 28, 25, 1) + ln(36, 11, 36, 39, 2);
+                case 'hv_rimp': return ln(10, 25, 20, 25, 2) + `<rect x="20" y="12" width="10" height="26" ${st}/>` + [17, 22, 27, 32].map(y => ln(20, y, 30, y, 1)).join('') + `<polygon points="31,22 39,25 31,28" fill="${c}"/>`;
+                case 'hv_rext': return ln(10, 25, 20, 25, 2) + `<rect x="20" y="12" width="10" height="26" ${st}/>` + [17, 22, 27, 32].map(y => ln(20, y, 30, y, 1)).join('') + `<polygon points="39,22 31,25 39,28" fill="${c}"/>`;
+                case 'hv_wms': return ln(10, 25, 20, 25, 2) + `<rect x="20" y="12" width="12" height="26" ${st}/>` + [16, 20, 24, 28, 32, 36].map(y => ln(20, y, 32, y, 0.7)).join('') + [24, 28].map(x => ln(x, 12, x, 38, 0.7)).join('');
+                case 'hv_ja': return ln(10, 25, 18, 25, 2) + `<rect x="18" y="14" width="18" height="22" ${st}/>` + `<text x="27" y="28" font-family="sans-serif" font-size="8" font-weight="bold" fill="${c}" text-anchor="middle">JA</text>`;
+                case 'hv_bell': return ln(10, 25, 18, 25, 2) + `<path d="M18 21 Q28 21 32 12 L32 38 Q28 29 18 29" ${st}/>`;
+                case 'hv_tob': return ln(10, 25, 20, 25, 2) + `<polygon points="20,19 34,23 34,27 20,31" ${st}/>` + ln(34, 25, 42, 25, 1) + `<polygon points="41,23 45,25 41,27" fill="${c}"/>`;
+                case 'hv_louver': return ln(10, 25, 18, 25, 2) + `<rect x="18" y="12" width="14" height="26" ${st}/>` + [16, 21, 26, 31, 36].map(y => ln(18, y, 32, y - 3, 1)).join('');
+                case 'hv_toma': return ln(10, 25, 18, 25, 2) + `<path d="M18 17 L32 12 L32 38 L18 33 Z" ${st}/>` + ln(24, 25, 38, 25, 1.2) + `<polygon points="38,22 43,25 38,28" fill="${c}"/>`;
                 case 'monitor':   // monitor contraincendios: pedestal y lanza orientable
                     return ln(10, 25, 22, 25) + `<circle cx="24" cy="25" r="3" ${st}/>` + `<polygon points="26,23 39,17 40,20 27,27" fill="${c}"/>` + ln(24, 28, 24, 38, 1.6) + ln(19, 38, 29, 38, 1.6) + `<text x="31" y="35" font-family="sans-serif" font-size="5" font-weight="bold" fill="${c}" text-anchor="middle">MON</text>`;
                 case 'consumo':
