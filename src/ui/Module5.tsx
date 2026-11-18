@@ -15,7 +15,7 @@ const YEL = 'rgba(255,214,0,0.45)', RED = 'rgba(224,36,36,0.5)';
 /** Fondo de la relación: normal ≤ lim; amarillo > lim; rojo > 3,5. */
 const ratioBg = (extra: string | undefined, lim?: number) => { if (lim == null) return undefined; const x = parseFloat(extra ?? ''); return x > 3.5 + 1e-9 ? RED : x > lim + 1e-9 ? YEL : undefined; };
 
-function Result({ rows, kind, vt, lim }: { rows: Opt[]; kind: 'circ' | 'dim'; vt: number; lim?: number }) {
+function Result({ rows, kind, vt, lim, dBg }: { rows: Opt[]; kind: 'circ' | 'dim'; vt: number; lim?: number; dBg?: (d: number) => string | undefined }) {
   if (!rows.length) return <MessageBar intent="warning"><MessageBarBody>Sin resultados con estos límites.</MessageBarBody></MessageBar>;
   return (
     <div style={{ overflow: 'auto' }}>
@@ -23,7 +23,7 @@ function Result({ rows, kind, vt, lim }: { rows: Opt[]; kind: 'circ' | 'dim'; vt
         <thead><tr><th style={th}>{kind === 'circ' ? 'Ø interior (mm)' : 'Interior (mm)'}</th>{kind === 'dim' && <th style={th}>Relación</th>}{kind === 'circ' && <th style={th}>Espesor e (mm)</th>}<th style={th}>Área (m²)</th><th style={th}>v real (m/s)</th><th style={th}>Desv. vs objetivo</th><th style={th}>ΔP (Pa/m)</th><th style={th}>Nota</th></tr></thead>
         <tbody>{rows.map((r, i) => (
           <tr key={i} style={{ background: r.best ? 'var(--best)' : undefined, fontWeight: r.best ? 600 : 400 }}>
-            <td style={td}>{kind === 'circ' ? `Ø ${r.d}` : `${r.a} × ${r.b}`}</td>{kind === 'dim' && <td style={{ ...td, background: ratioBg(r.extra, lim) }}>{r.extra}</td>}
+            <td style={{ ...td, background: kind === 'circ' && dBg ? dBg(r.d ?? 0) : undefined }}>{kind === 'circ' ? `Ø ${r.d}` : `${r.a} × ${r.b}`}</td>{kind === 'dim' && <td style={{ ...td, background: ratioBg(r.extra, lim) }}>{r.extra}</td>}
             {kind === 'circ' && <td style={td}>{spiroThickness(r.d) ?? '—'}</td>}
             <td style={td}>{f(r.area, 4)}</td>
             <td style={{ ...td, color: r.v > vt * 1.0000001 ? 'var(--over)' : undefined }}>{f(r.v)}</td>
@@ -56,10 +56,12 @@ export function Module5() {
   const spRows = useMemo(() => valid ? SPIRO.map(x => ({ ...circCheck(Q, V, ctx, x.di), e: x.e })) : [], [Q, V, ctx, valid]);
   const spBest = spRows.findIndex(r => r.v <= V * (1 + 1e-9));
   const spSel = spRows.find(r => String(r.d) === spD) ?? null;
+  const reqLine = valid && ( <Text style={{ background: dBg(dReq), padding: '4px 8px', borderRadius: 4, width: 'fit-content' }}>Caudal y velocidad → área necesaria <b>{f(A, 4)} m²</b> · Ø hidráulico necesario <b>{f(dReq, 2)} mm</b>{DD > 0 && <> · diagrama <b>{f(DD, 0)} mm</b> ({dReq > DD + 1e-9 ? 'lo supera' : 'dentro'})</>}</Text>);
   const chk = valid && both ? rectCheck(Q, V, ctx, hN, wN, 3.5) : null;
   const rect = useMemo(() => valid ? rectOptions(Q, V, ctx, { min: 100, maxH: 1000, stepH: 50, mode, fixH: both ? null : parseNum(fixH), fixW: both ? null : parseNum(fixW), maxRatio: RR }) : [], [Q, V, ctx, rratio, mode, fixH, fixW, both, valid]);
   const oval = useMemo(() => valid ? ovalOptions(Q, V, ovalT, ctx, { maxMinor: parseNum(omax), maxRatio: parseNum(oratio) ?? 6, mode }) : [], [Q, V, ovalT, ctx, omax, oratio, mode, valid]);
   const num = (val: string, set: (s: string) => void) => <Input value={val} onChange={(_, x) => set(x.value)} />;
+  const diagField = <Field label="Ø del diagrama (mm)">{num(diagD, setDiagD)}</Field>;
   const ovalRows = useMemo(() => ovalT.map((t, i) => ({ ...t, uid: String(i) })), [ovalT]);
   const ovalCols: ColDef[] = [numCol('minor', 'Eje menor (mm)', { d: 0, flex: 1 }), numCol('major', 'Eje mayor (mm)', { d: 0, flex: 1 })];
   const best = (r: Opt[]) => r.find(x => x.best);
@@ -96,22 +98,24 @@ export function Module5() {
         <Tab value="circ">Circular (Ø normalizados)</Tab><Tab value="espiro">Espiro (Spiroduct)</Tab><Tab value="rect">Rectangular (múltiplos de 5)</Tab><Tab value="oval">Oval plano (normalizados)</Tab><Tab value="tablas">Tablas normalizadas</Tab>
       </TabList>
       {tab === 'circ' && <Card><Subtitle2>Diámetros interiores normalizados</Subtitle2>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(190px,1fr))', gap: 10 }}><Field label="Diámetro interior manual (mm, opc.)">{num(circD, setCircD)}</Field></div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(190px,1fr))', gap: 10 }}>{diagField}<Field label="Diámetro interior manual (mm, opc.)">{num(circD, setCircD)}</Field></div>
+        {reqLine}
         {cchk && <div style={{ overflow: 'auto' }}><table style={{ borderCollapse: 'collapse', fontSize: 13 }}>
           <thead><tr><th style={th}>Ø interior (mm)</th><th style={th}>Espesor e (mm)</th><th style={th}>Área (m²)</th><th style={th}>v real (m/s)</th><th style={th}>ΔP (Pa/m)</th><th style={th}>Nota</th></tr></thead>
-          <tbody><tr style={{ background: 'var(--best)', fontWeight: 600 }}><td style={td}>Ø {f(cD, cD % 1 ? 1 : 0)}</td><td style={td}>{spiroThickness(cD) ?? '—'}</td><td style={td}>{f(cchk.area, 4)}</td>
+          <tbody><tr style={{ background: 'var(--best)', fontWeight: 600 }}><td style={{ ...td, background: dBg(cD) }}>Ø {f(cD, cD % 1 ? 1 : 0)}</td><td style={td}>{spiroThickness(cD) ?? '—'}</td><td style={td}>{f(cchk.area, 4)}</td>
             <td style={{ ...td, color: cchk.v > rng.max + 1e-9 || cchk.v < rng.min - 1e-9 ? 'var(--over)' : undefined }}>{f(cchk.v)}</td><td style={td}>{f(cchk.dp, 3)}</td><td style={td}>{cchk.label}</td></tr></tbody></table></div>}
         {cchk && <Subtitle2>Normalizados</Subtitle2>}
-        <Result rows={circ} kind="circ" vt={V} /></Card>}
+        <Result rows={circ} kind="circ" vt={V} dBg={dBg} /></Card>}
       {tab === 'espiro' && <Card><Subtitle2>Conducto espiro Spiroduct — acero galvanizado</Subtitle2>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(190px,1fr))', gap: 10 }}>
-          <Field label="Diámetro interior (lista normalizada)"><Dropdown value={spD ? `Ø ${spD}` : '— elegir —'} selectedOptions={[spD]} onOptionSelect={(_, o) => setSpD((o.optionValue as string) ?? '')}>
+          {diagField}<Field label="Diámetro interior (lista normalizada)"><Dropdown value={spD ? `Ø ${spD}` : '— elegir —'} selectedOptions={[spD]} onOptionSelect={(_, o) => setSpD((o.optionValue as string) ?? '')}>
             <Option value="">— elegir —</Option>{SPIRO.map(x => <Option key={x.di} value={String(x.di)}>{`Ø ${x.di}`}</Option>)}</Dropdown></Field></div>
-        {spSel && <Text style={{ background: 'var(--best)', padding: '6px 10px', borderRadius: 4, width: 'fit-content', fontWeight: 600 }}>Ø {spSel.d} · espesor {String(spSel.e).replace('.', ',')} mm · área {f(spSel.area, 4)} m² · v real <span style={{ color: spSel.v > rng.max + 1e-9 || spSel.v < rng.min - 1e-9 ? 'var(--over)' : undefined }}>{f(spSel.v)} m/s</span> · ΔP {f(spSel.dp, 3)} Pa/m</Text>}
+        {reqLine}
+        {spSel && <Text style={{ background: dBg(spSel.d ?? 0) ?? 'var(--best)', padding: '6px 10px', borderRadius: 4, width: 'fit-content', fontWeight: 600 }}>Ø {spSel.d} · espesor {String(spSel.e).replace('.', ',')} mm · área {f(spSel.area, 4)} m² · v real <span style={{ color: spSel.v > rng.max + 1e-9 || spSel.v < rng.min - 1e-9 ? 'var(--over)' : undefined }}>{f(spSel.v)} m/s</span> · ΔP {f(spSel.dp, 3)} Pa/m</Text>}
         {!valid ? <MessageBar intent="warning"><MessageBarBody>Introduce caudal y velocidad.</MessageBarBody></MessageBar> : <div style={{ overflow: 'auto' }}><table style={{ borderCollapse: 'collapse', fontSize: 13, width: '100%' }}>
           <thead><tr><th style={th}>Ø interior (mm)</th><th style={th}>Espesor e (mm)</th><th style={th}>Área (m²)</th><th style={th}>v real (m/s)</th><th style={th}>Desv. vs objetivo</th><th style={th}>ΔP (Pa/m)</th><th style={th}>Nota</th></tr></thead>
           <tbody>{spRows.map((r, i) => (<tr key={i} style={{ background: i === spBest ? 'var(--best)' : String(r.d) === spD ? 'var(--hdr)' : undefined, fontWeight: i === spBest ? 600 : 400 }}>
-            <td style={td}>Ø {r.d}</td><td style={td}>{String(r.e).replace('.', ',')}</td><td style={td}>{f(r.area, 4)}</td>
+            <td style={{ ...td, background: dBg(r.d ?? 0) }}>Ø {r.d}</td><td style={td}>{String(r.e).replace('.', ',')}</td><td style={td}>{f(r.area, 4)}</td>
             <td style={{ ...td, color: r.v > V * 1.0000001 ? 'var(--over)' : undefined }}>{f(r.v)}</td><td style={td}>{r.dev >= 0 ? '+' : ''}{f(r.dev * 100, 1)} %</td><td style={td}>{f(r.dp, 3)}</td><td style={td}>{i === spBest ? 'Recomendado (v ≤ objetivo)' : ''}</td></tr>))}</tbody></table>
           {spBest < 0 && <MessageBar intent="warning"><MessageBarBody>Ningún Spiroduct de la tabla (hasta Ø315) cumple la velocidad con este caudal; usa el circular normalizado.</MessageBarBody></MessageBar>}</div>}
       </Card>}
@@ -120,7 +124,7 @@ export function Module5() {
           <Field label="Ø hidráulico del diagrama (mm)">{num(diagD, setDiagD)}</Field>
           <Field label="Alto (mm)">{num(fixH, setFixH)}</Field><Field label="Ancho (mm)">{num(fixW, setFixW)}</Field></div>
         <Text size={200} style={{ color: 'var(--subtle)' }}>Indica alto y ancho para calcular la velocidad con el caudal; con solo uno se calcula el otro lado; sin ninguno se muestran alternativas.</Text>
-        {valid && <Text style={{ background: dBg(dReq), padding: '4px 8px', borderRadius: 4, width: 'fit-content' }}>Caudal y velocidad → área necesaria <b>{f(A, 4)} m²</b> · Ø hidráulico necesario <b>{f(dReq, 2)} mm</b>{DD > 0 && <> · diagrama <b>{f(DD, 0)} mm</b> ({dReq > DD + 1e-9 ? 'lo supera' : 'dentro'})</>}</Text>}
+        {reqLine}
         {chk && <div style={{ overflow: 'auto' }}><table style={{ borderCollapse: 'collapse', fontSize: 13 }}>
           <thead><tr><th style={th}>Interior (mm)</th><th style={th}>Relación</th><th style={th}>Área (m²)</th><th style={th}>Dh = 2ab/(a+b) (mm)</th><th style={th}>v real (m/s)</th><th style={th}>ΔP (Pa/m)</th><th style={th}>Nota</th></tr></thead>
           <tbody><tr style={{ background: 'var(--best)', fontWeight: 600 }}><td style={td}>{hN} × {wN}</td><td style={{ ...td, background: ratioBg(chk.extra, RR) }}>{chk.extra}</td><td style={td}>{f(chk.area, 4)}</td><td style={{ ...td, background: dBg((2 * hN * wN) / (hN + wN)) }}>{f((2 * hN * wN) / (hN + wN), 2)}</td>
