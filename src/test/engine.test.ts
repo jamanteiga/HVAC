@@ -166,3 +166,6 @@ describe('Tabla 1A-1 espesores', () => {
   it('estanco', () => { expect([100, 150, 151, 300, 301, 450, 451, 761].map(d => espesorTabla(d, true))).toEqual([2, 2, 2.5, 2.5, 3, 3, 3, 3]); });
   it('sin dimensión', () => expect(espesorTabla(0, false)).toBeNull());
 });
+
+import { deHuebscher } from '../engine/quick';
+describe('Huebscher', () => { it('200x400 ≈ 304,7 mm', () => expect(deHuebscher(200, 400)).toBeCloseTo(304.67, 1)); });

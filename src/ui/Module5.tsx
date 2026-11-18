@@ -4,7 +4,7 @@ import { ColDef } from 'ag-grid-community';
 import { useStore } from '../store';
 import { DataGrid, numCol, parseNum } from './DataGrid';
 import { defaultLocales } from '../engine/defaults';
-import { circularOptions, rectOptions, rectCheck, circCheck, ovalOptions, provisionalOval, R20_SERIES, SPIRO_SERIES, SPIRO, spiroThickness, CRITERIOS_VEL, requiredArea, parseOvalTable, Opt } from '../engine/quick';
+import { circularOptions, rectOptions, rectCheck, circCheck, deHuebscher, ovalOptions, provisionalOval, R20_SERIES, SPIRO_SERIES, SPIRO, spiroThickness, CRITERIOS_VEL, requiredArea, parseOvalTable, Opt } from '../engine/quick';
 
 const f = (v: number, d = 2) => v.toLocaleString('es-ES', { minimumFractionDigits: d, maximumFractionDigits: d });
 const th: React.CSSProperties = { textAlign: 'left', padding: '6px 12px', background: 'var(--hdr)', borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap' };
@@ -127,8 +127,8 @@ export function Module5() {
         <Text size={200} style={{ color: 'var(--subtle)' }}>Indica alto y ancho para calcular la velocidad con el caudal; con solo uno se calcula el otro lado; sin ninguno se muestran alternativas.</Text>
         {reqLine}
         {chk && <div style={{ overflow: 'auto' }}><table style={{ borderCollapse: 'collapse', fontSize: 13 }}>
-          <thead><tr><th style={th}>Interior (mm)</th><th style={th}>Relación</th><th style={th}>Área (m²)</th><th style={th}>Dh = 2ab/(a+b) (mm)</th><th style={th}>v real (m/s)</th><th style={th}>ΔP (Pa/m)</th><th style={th}>Nota</th></tr></thead>
-          <tbody><tr style={{ background: 'var(--best)', fontWeight: 600 }}><td style={td}>{hN} × {wN}</td><td style={{ ...td, background: ratioBg(chk.extra, RR) }}>{chk.extra}</td><td style={td}>{f(chk.area, 4)}</td><td style={{ ...td, background: dBg((2 * hN * wN) / (hN + wN)) }}>{f((2 * hN * wN) / (hN + wN), 2)}</td>
+          <thead><tr><th style={th}>Interior (mm)</th><th style={th}>Relación</th><th style={th}>Área (m²)</th><th style={th}>Ø hidráulico Huebscher (mm)</th><th style={th}>v real (m/s)</th><th style={th}>ΔP (Pa/m)</th><th style={th}>Nota</th></tr></thead>
+          <tbody><tr style={{ background: 'var(--best)', fontWeight: 600 }}><td style={td}>{hN} × {wN}</td><td style={{ ...td, background: ratioBg(chk.extra, RR) }}>{chk.extra}</td><td style={td}>{f(chk.area, 4)}</td><td style={{ ...td, background: dBg(deHuebscher(hN, wN)) }}>{f(deHuebscher(hN, wN), 2)}</td>
             <td style={{ ...td, color: chk.v > rng.max + 1e-9 ? 'var(--over)' : undefined }}>{f(chk.v)}</td><td style={td}>{f(chk.dp, 3)}</td><td style={td}>{chk.label}</td></tr></tbody></table></div>}
         {chk && ratioBg(chk.extra, RR) && <MessageBar intent={ratioBg(chk.extra, RR) === RED ? 'error' : 'warning'}><MessageBarBody>{ratioBg(chk.extra, RR) === RED ? 'La relación supera el límite 1:3,5.' : `La relación supera 1:${f(RR, 1)} (normal); el límite es 1:3,5.`}</MessageBarBody></MessageBar>}
         {chk && chk.v > rng.max + 1e-9 && <MessageBar intent="warning"><MessageBarBody>La velocidad {f(chk.v, 1)} m/s supera el máximo de {rng.max} m/s.</MessageBarBody></MessageBar>}

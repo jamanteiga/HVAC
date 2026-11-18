@@ -80,6 +80,9 @@ export function rectOptions(q: number, vt: number, ctx: Ctx, o: RectOpts): Opt[]
   return [...out.map(r => ({ ...r, best: false })), ...sweep];
 }
 
+/** Diámetro equivalente de Huebscher para rectangular (mm): 1,3·(ab)^0,625 / (a+b)^0,25. */
+export const deHuebscher = (a: number, b: number) => (a > 0 && b > 0 ? (1.3 * Math.pow(a * b, 0.625)) / Math.pow(a + b, 0.25) : 0);
+
 /** Comprobación de un circular de diámetro libre (mm). */
 export function circCheck(q: number, vt: number, ctx: Ctx, d: number): Opt {
   const r = mk('Circular', q, vt, ctx, { d }, (Math.PI / 4) * (d / 1000) ** 2); r.label = 'Medida indicada'; return r;
