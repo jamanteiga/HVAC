@@ -4,7 +4,7 @@ import { ColDef } from 'ag-grid-community';
 import { useStore } from '../store';
 import { DataGrid, numCol, parseNum } from './DataGrid';
 import { defaultLocales } from '../engine/defaults';
-import { circularOptions, rectOptions, rectCheck, ovalOptions, provisionalOval, R20_SERIES, SPIRO_SERIES, spiroThickness, CRITERIOS_VEL, requiredArea, parseOvalTable, Opt } from '../engine/quick';
+import { circularOptions, rectOptions, rectCheck, circCheck, ovalOptions, provisionalOval, R20_SERIES, SPIRO_SERIES, spiroThickness, CRITERIOS_VEL, requiredArea, parseOvalTable, Opt } from '../engine/quick';
 
 const f = (v: number, d = 2) => v.toLocaleString('es-ES', { minimumFractionDigits: d, maximumFractionDigits: d });
 const th: React.CSSProperties = { textAlign: 'left', padding: '6px 12px', background: 'var(--hdr)', borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap' };
@@ -38,7 +38,7 @@ export function Module5() {
   const [q, setQ] = useState('3600'); const [v, setV] = useState('8'); const [loc, setLoc] = useState(''); const [mat, setMat] = useState('Acero galvanizado');
   const [crit, setCrit] = useState(''); const [mode, setMode] = useState<'exceso' | 'proximo'>('exceso'); const [tab, setTab] = useState('circ');
   const [rratio, setRratio] = useState('2'); const [oratio, setOratio] = useState('6');
-  const [diagD, setDiagD] = useState(''); const [fixH, setFixH] = useState(''); const [fixW, setFixW] = useState('');
+  const [circD, setCircD] = useState(''); const [diagD, setDiagD] = useState(''); const [fixH, setFixH] = useState(''); const [fixW, setFixW] = useState('');
   const [omax, setOmax] = useState(''); const [paste, setPaste] = useState(''); const [sel, setSel] = useState<string | null>(null);
   const locales = p.design.locales ?? defaultLocales(); const L = locales.find(l => l.name === loc); const C = CRITERIOS_VEL.find(c => c.name === crit);
   const rng = C ? { name: C.name, min: C.vMin, max: C.vMax } : L ? { name: L.name, min: L.vMin, max: L.vMax } : { name: '', min: 7, max: 10 };
@@ -52,6 +52,7 @@ export function Module5() {
   const hN = parseNum(fixH) ?? 0, wN = parseNum(fixW) ?? 0; const both = hN > 0 && wN > 0;
   const DD = parseNum(diagD) ?? 0; const dReq = valid ? Math.sqrt((4 * A) / Math.PI) * 1000 : 0;
   const dBg = (d: number) => DD > 0 ? (d > DD + 1e-9 ? RED : GRN) : undefined; // verde si ≤ Ø del diagrama, rojo si lo supera
+  const cD = parseNum(circD) ?? 0; const cchk = valid && cD > 0 ? circCheck(Q, V, ctx, cD) : null;
   const chk = valid && both ? rectCheck(Q, V, ctx, hN, wN, 3.5) : null;
   const rect = useMemo(() => valid ? rectOptions(Q, V, ctx, { min: 100, maxH: 1000, stepH: 50, mode, fixH: both ? null : parseNum(fixH), fixW: both ? null : parseNum(fixW), maxRatio: RR }) : [], [Q, V, ctx, rratio, mode, fixH, fixW, both, valid]);
   const oval = useMemo(() => valid ? ovalOptions(Q, V, ovalT, ctx, { maxMinor: parseNum(omax), maxRatio: parseNum(oratio) ?? 6, mode }) : [], [Q, V, ovalT, ctx, omax, oratio, mode, valid]);
@@ -91,7 +92,14 @@ export function Module5() {
       <TabList selectedValue={tab} onTabSelect={(_, d) => setTab(d.value as string)}>
         <Tab value="circ">Circular (Ø normalizados)</Tab><Tab value="rect">Rectangular (múltiplos de 5)</Tab><Tab value="oval">Oval plano (normalizados)</Tab><Tab value="tablas">Tablas normalizadas</Tab>
       </TabList>
-      {tab === 'circ' && <Card><Subtitle2>Diámetros interiores normalizados</Subtitle2><Result rows={circ} kind="circ" vt={V} /></Card>}
+      {tab === 'circ' && <Card><Subtitle2>Diámetros interiores normalizados</Subtitle2>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(190px,1fr))', gap: 10 }}><Field label="Diámetro interior manual (mm, opc.)">{num(circD, setCircD)}</Field></div>
+        {cchk && <div style={{ overflow: 'auto' }}><table style={{ borderCollapse: 'collapse', fontSize: 13 }}>
+          <thead><tr><th style={th}>Ø interior (mm)</th><th style={th}>Espesor e (mm)</th><th style={th}>Área (m²)</th><th style={th}>v real (m/s)</th><th style={th}>ΔP (Pa/m)</th><th style={th}>Nota</th></tr></thead>
+          <tbody><tr style={{ background: 'var(--best)', fontWeight: 600 }}><td style={td}>Ø {f(cD, cD % 1 ? 1 : 0)}</td><td style={td}>{spiroThickness(cD) ?? '—'}</td><td style={td}>{f(cchk.area, 4)}</td>
+            <td style={{ ...td, color: cchk.v > rng.max + 1e-9 || cchk.v < rng.min - 1e-9 ? 'var(--over)' : undefined }}>{f(cchk.v)}</td><td style={td}>{f(cchk.dp, 3)}</td><td style={td}>{cchk.label}</td></tr></tbody></table></div>}
+        {cchk && <Subtitle2>Normalizados</Subtitle2>}
+        <Result rows={circ} kind="circ" vt={V} /></Card>}
       {tab === 'rect' && <Card><Subtitle2>Rectangular — ambos lados terminados en 0 o 5</Subtitle2>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))', gap: 10 }}>
           <Field label="Ø hidráulico del diagrama (mm)">{num(diagD, setDiagD)}</Field>

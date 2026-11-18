@@ -80,6 +80,11 @@ export function rectOptions(q: number, vt: number, ctx: Ctx, o: RectOpts): Opt[]
   return [...out.map(r => ({ ...r, best: false })), ...sweep];
 }
 
+/** Comprobación de un circular de diámetro libre (mm). */
+export function circCheck(q: number, vt: number, ctx: Ctx, d: number): Opt {
+  const r = mk('Circular', q, vt, ctx, { d }, (Math.PI / 4) * (d / 1000) ** 2); r.label = 'Medida indicada'; return r;
+}
+
 /** Comprobación de un rectangular dado (mm): velocidad real, relación y ΔP para el caudal q. */
 export function rectCheck(q: number, vt: number, ctx: Ctx, H: number, W: number, maxRatio: number): Opt {
   const r = mk('Rectangular', q, vt, ctx, { a: H, b: W }, (H * W) / 1e6);
