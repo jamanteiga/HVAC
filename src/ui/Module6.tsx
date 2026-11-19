@@ -33,7 +33,7 @@ function Calc({ shape, rho, lmax, pmax, spiro }: { shape: WShape; rho: string; l
         <tbody>
           {spiro && <Row label="Tipo de conducto" color={C.in} unit=""><select value={ais ? 'si' : 'no'} onChange={e => setAis(e.target.value === 'si')} style={{ width: 120, background: 'transparent', color: '#111', border: 'none', borderBottom: '1px solid #555', fontSize: 13 }}><option value="no" style={{ color: '#111' }}>Sin aislamiento</option><option value="si" style={{ color: '#111' }}>Con aislamiento</option></select></Row>}
           {FIELDS[shape].map(f => spiro && f.k === 'diam' ? (
-            <Row key={f.k} label={ais ? 'Diámetro nominal' : 'Diámetro interior'} color={C.in} unit="mm"><select value={v.diam ?? ''} onChange={e => setV(s => ({ ...s, diam: e.target.value }))} style={{ width: 100, background: 'transparent', color: '#111', border: 'none', borderBottom: '1px solid #555', textAlign: 'right', fontSize: 13 }}>
+            <Row key={f.k} label="Diámetro nominal" color={C.in} unit="mm"><select value={v.diam ?? ''} onChange={e => setV(s => ({ ...s, diam: e.target.value }))} style={{ width: 100, background: 'transparent', color: '#111', border: 'none', borderBottom: '1px solid #555', textAlign: 'right', fontSize: 13 }}>
               {SPIRO.map(x => <option key={x.di} value={x.di} style={{ color: '#111' }}>{x.di}</option>)}</select></Row>
           ) : spiro && f.k === 'espesor' ? (
             <Row key={f.k} label="Espesor (según tabla)" color={C.const} unit="mm"><Input size="small" appearance="underline" disabled readOnly value={String(n('espesor')).replace('.', ',')} style={{ width: 100, background: 'transparent' }} input={{ style: { textAlign: 'right', color: '#111', WebkitTextFillColor: '#111' } }} /></Row>
