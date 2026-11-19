@@ -21,7 +21,7 @@ const Row = ({ label, color, children, unit, bold }: any) => (<tr style={{ backg
 
 function Calc({ shape, rho, lmax, pmax, spiro }: { shape: WShape; rho: string; lmax: number; pmax: number; spiro?: boolean }) {
   const [v, setV] = useState<Record<string, string>>(spiro ? { diam: '200', extra: '0' } : { espesor: '3', extra: '0' });
-  const [info, setInfo] = useState(''); const [est, setEst] = useState(false);
+  const [info, setInfo] = useState(''); const est = false; // sin selector: espesor de la tabla 1A-1 como no estanco
   const auto = !spiro && shape !== 'Oval'; // Tabla 1A-1: circular y rectangular
   const n = (k: K) => k === 'espesor' && auto ? (espesorTabla(shape === 'Circular' ? (parseNum(v.diam) ?? 0) : Math.max(parseNum(v.alto) ?? 0, parseNum(v.ancho) ?? 0), est) ?? 0) : k === 'espesor' && spiro ? (spiroThickness(parseNum(v.diam) ?? null) ?? 0) : parseNum(v[k]) ?? 0;
   const R = useMemo(() => weight({ shape, alto: n('alto'), ancho: n('ancho'), diam: n('diam'), espesor: n('espesor'), longitud: n('longitud'), densidad: parseNum(rho) ?? 7850, extra: n('extra') }), [v, shape, rho, est]); // eslint-disable-line
@@ -36,10 +36,8 @@ function Calc({ shape, rho, lmax, pmax, spiro }: { shape: WShape; rho: string; l
               {SPIRO.map(x => <option key={x.di} value={x.di} style={{ color: '#111' }}>{x.di}</option>)}</select></Row>
           ) : spiro && f.k === 'espesor' ? (
             <Row key={f.k} label="Espesor (según tabla)" color={C.const} unit="mm"><Input size="small" appearance="underline" disabled readOnly value={String(n('espesor')).replace('.', ',')} style={{ width: 100, background: 'transparent' }} input={{ style: { textAlign: 'right', color: '#111', WebkitTextFillColor: '#111' } }} /></Row>
-          ) : auto && f.k === 'espesor' ? (<>
-            <Row key="est" label="Tipo" color={C.in} unit=""><select value={est ? 'si' : 'no'} onChange={e => setEst(e.target.value === 'si')} style={{ width: 100, background: 'transparent', color: '#111', border: 'none', borderBottom: '1px solid #555', fontSize: 13 }}>
-              <option value="no" style={{ color: '#111' }}>No estanco</option><option value="si" style={{ color: '#111' }}>Estanco</option></select></Row>
-            <Row key={f.k} label="Espesor (tabla 1A-1)" color={C.const} unit="mm"><Input size="small" appearance="underline" disabled readOnly value={String(n('espesor')).replace('.', ',')} style={{ width: 100, background: 'transparent' }} input={{ style: { textAlign: 'right', color: '#111', WebkitTextFillColor: '#111' } }} /></Row></>
+          ) : auto && f.k === 'espesor' ? (
+            <Row key={f.k} label="Espesor (tabla 1A-1)" color={C.const} unit="mm"><Input size="small" appearance="underline" disabled readOnly value={String(n('espesor')).replace('.', ',')} style={{ width: 100, background: 'transparent' }} input={{ style: { textAlign: 'right', color: '#111', WebkitTextFillColor: '#111' } }} /></Row>
           ) : (
             <Row key={f.k} label={f.label} color={C.in} unit={f.unit}><Input size="small" appearance="underline" value={v[f.k] ?? ''} onChange={(_, x) => setV(s => ({ ...s, [f.k]: x.value }))} style={{ width: 100, background: 'transparent', color: '#111' }} input={{ style: { textAlign: 'right', color: '#111' } }} /></Row>))}
           <Row label="Peso extra" color={C.in} unit="kg"><Input size="small" appearance="underline" value={v.extra ?? ''} onChange={(_, x) => setV(s => ({ ...s, extra: x.value }))} style={{ width: 100, background: 'transparent' }} input={{ style: { textAlign: 'right', color: '#111' } }} /></Row>
