@@ -186,3 +186,13 @@ describe('Rectangular de 50 en 50 desde medida inicial', () => {
     for (const r of o) { expect((r.a! - 110) % 50).toBe(0); expect((r.b! - 110) % 50).toBe(0); expect(r.v).toBeLessThanOrEqual(10 + 1e-9); }
   });
 });
+
+import { pesoSpiroAislado, spiroAislado } from '../engine/weights';
+describe('Espiro aislado', () => {
+  it('100 mm → 11,2 kg por 1000 mm; 315 mm → 30,1 kg', () => {
+    expect(pesoSpiroAislado(100, 1000)).toBeCloseTo(11.2, 6);
+    expect(pesoSpiroAislado(315, 1000)).toBeCloseTo(30.1, 6);
+    expect(pesoSpiroAislado(200, 1500)).toBeCloseTo(30.9, 6);
+    expect(spiroAislado(180)?.De).toBe(200);
+  });
+});
