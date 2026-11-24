@@ -196,3 +196,12 @@ describe('Espiro aislado', () => {
     expect(spiroAislado(180)?.De).toBe(200);
   });
 });
+
+import { deltaX } from '../engine/special';
+describe('Cálculos especiales', () => {
+  it('ΔX = ΔZ / sen(codo) · π', () => {
+    expect(deltaX(100, 30)).toBeCloseTo(100 / 0.5 * Math.PI, 6);
+    expect(deltaX(250, 45)).toBeCloseTo(250 / Math.sin(Math.PI / 4) * Math.PI, 6);
+    expect(deltaX(-1, 45)).toBeNull();
+  });
+});
