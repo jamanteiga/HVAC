@@ -199,9 +199,9 @@ describe('Espiro aislado', () => {
 
 import { deltaX } from '../engine/special';
 describe('Cálculos especiales', () => {
-  it('ΔX = ΔZ / sen(codo) · π', () => {
-    expect(deltaX(100, 30)).toBeCloseTo(100 / 0.5 * Math.PI, 6);
-    expect(deltaX(250, 45)).toBeCloseTo(250 / Math.sin(Math.PI / 4) * Math.PI, 6);
+  it('ΔX = ΔZ / sen(codo)', () => {
+    expect(deltaX(20, 15)).toBeCloseTo(77.2740661, 6);
+    expect(deltaX(100, 30)).toBeCloseTo(200, 6);
     expect(deltaX(-1, 45)).toBeNull();
   });
 });
