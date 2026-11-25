@@ -243,3 +243,12 @@ describe('Lecturas OCR ruidosas (Foran)', () => {
     expect(r.coords).toEqual({ x1: '57498.01', y1: '3852.99', z1: '30505', x2: '58198.39', y2: '3382.51', z2: '30605' });
   });
 });
+
+import { trianguloB } from '../engine/special';
+describe('Distancia B (esquema P1-P3-P2)', () => {
+  it('datos Foran, β 45°', () => {
+    const r = trianguloB({ x: 57498.01, y: 3852.99, z: 30505 }, { x: 58198.39, y: 3382.51, z: 30605 }, 45);
+    expect(r.dX).toBeCloseTo(700.38, 2); expect(r.dY).toBeCloseTo(470.48, 2); expect(r.B).toBeCloseTo(700.38 - 470.48, 2);
+  });
+  it('B negativo si β es muy pequeño', () => { expect(trianguloB({ x: 0, y: 0, z: 0 }, { x: 100, y: -500, z: 0 }, 15).B).toBeLessThan(0); });
+});

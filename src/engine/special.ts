@@ -19,3 +19,12 @@ export function recorrido(p1: P3, p2: P3, a1: number, a2: number): Recorrido {
   const h1 = m / Math.tan(r(a1)), h2 = m / Math.tan(r(a2));
   return { dx, dz, h1, h2, L1: m / Math.sin(r(a1)), L2: m / Math.sin(r(a2)), recto: dx - h1 - h2 };
 }
+
+export interface TrianguloB { dX: number; dY: number; dZ: number; A: number; proyeccion: number; longitud: number; B: number }
+/** Esquema «Cálculo distancia B» (planta): P3 = corte de la recta que sale de P1 con ángulo β y la horizontal de P2.
+ *  B = |X2−X1| − |Y2−Y1|/tan β  (B < 0: β es demasiado pequeño y P3 queda más allá de P2). */
+export function trianguloB(p1: P3, p2: P3, betaGrados: number): TrianguloB {
+  const dX = Math.abs(p2.x - p1.x), dY = Math.abs(p2.y - p1.y), b = betaGrados * Math.PI / 180;
+  const proyeccion = dY / Math.tan(b);
+  return { dX, dY, dZ: p2.z - p1.z, A: Math.hypot(dX, dY), proyeccion, longitud: dY / Math.sin(b), B: dX - proyeccion };
+}

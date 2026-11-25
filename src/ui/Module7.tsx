@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Card, Text, Title3 } from '@fluentui/react-components';
-import { CODOS_ESPECIALES, deltaX, recorrido } from '../engine/special';
+import { CODOS_ESPECIALES, deltaX, trianguloB } from '../engine/special';
 import { parseNum } from './DataGrid';
 import { parseCoords, combinarLecturas } from '../engine/ocr';
 
@@ -51,7 +51,7 @@ export function Module7() {
   const ks = ['x1', 'y1', 'z1', 'x2', 'y2', 'z2'], vals = ks.map(k => parseNum(p[k] ?? ''));
   const ok = vals.every(v => v != null);
   const [a1, setA1] = useState('45'), [a2, setA2] = useState('45');
-  const r = ok ? recorrido({ x: vals[0]!, y: vals[1]!, z: vals[2]! }, { x: vals[3]!, y: vals[4]!, z: vals[5]! }, +a1, +a2) : null;
+  const r = ok ? trianguloB({ x: vals[0]!, y: vals[1]!, z: vals[2]! }, { x: vals[3]!, y: vals[4]!, z: vals[5]! }, +a1) : null;
   const sel = (v: string, f: (x: string) => void) => <select value={v} onChange={e => f(e.target.value)} style={field}>{CODOS_ESPECIALES.map(a => <option key={a} value={a} style={{ color: '#111' }}>{a}</option>)}</select>;
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12, height: '100%', overflow: 'auto' }}>
@@ -84,13 +84,14 @@ export function Module7() {
             {['x1', 'y1', 'z1', 'x2', 'y2', 'z2'].map(k => <Row key={k} label={k[0].toUpperCase() + k[1] + (k[0] === 'z' ? ' (cota)' : '')} color={C.in} unit="mm"><input value={p[k] ?? ''} onChange={set(k)} inputMode="decimal" style={ocrKeys.includes(k) ? { ...field, outline: '2px solid #ff8c00' } : field} /></Row>)}
             <Row label="β" color={C.in} unit="°">{sel(a1, setA1)}</Row>
             <Row label="γ" color={C.in} unit="°">{sel(a2, setA2)}</Row>
-            <Row label="ΔX horizontal (de la vertical de P2 a P1)" color={C.mid} unit="mm" bold>{r ? fmt(r.dx) : ''}</Row>
-            <Row label="ΔZ (Z2 − Z1)" color={C.mid} unit="mm">{r ? fmt(r.dz) : ''}</Row>
-            <Row label="Proyección horizontal codo P1 (ΔZ/2)" color={C.mid} unit="mm">{r ? fmt(r.h1) : ''}</Row>
-            <Row label="Proyección horizontal codo P2 (ΔZ/2)" color={C.mid} unit="mm">{r ? fmt(r.h2) : ''}</Row>
-            <Row label="Longitud inclinada desde P1" color={C.mid} unit="mm">{r ? fmt(r.L1) : ''}</Row>
-            <Row label="Longitud inclinada desde P2" color={C.mid} unit="mm">{r ? fmt(r.L2) : ''}</Row>
-            <Row label="Distancia B" color={C.calc} unit="mm" bold>{r ? <span style={{ color: r.recto < 0 ? '#b00020' : undefined }}>{fmt(r.recto)}</span> : ''}</Row>
+            <Row label="ΔX = |X2 − X1|" color={C.mid} unit="mm">{r ? fmt(r.dX) : ''}</Row>
+            <Row label="ΔY = |Y2 − Y1|" color={C.mid} unit="mm">{r ? fmt(r.dY) : ''}</Row>
+            <Row label="ΔZ = Z2 − Z1" color={C.mid} unit="mm">{r ? fmt(r.dZ) : ''}</Row>
+            <Row label="A (P1–P2 en planta)" color={C.mid} unit="mm">{r ? fmt(r.A) : ''}</Row>
+            <Row label="Longitud P1–P3 (ΔY / sen β)" color={C.mid} unit="mm">{r ? fmt(r.longitud) : ''}</Row>
+            <Row label="Proyección P1–P3 en X (ΔY / tan β)" color={C.mid} unit="mm">{r ? fmt(r.proyeccion) : ''}</Row>
+            <Row label="Distancia B" color={C.calc} unit="mm" bold>{r ? <span style={{ color: r.B < 0 ? '#b00020' : undefined }}>{fmt(r.B)}</span> : ''}</Row>
+            {r && r.B < 0 && <tr><td colSpan={3} style={{ ...cell, color: '#b00020', fontSize: 12 }}>β demasiado pequeño: P3 queda más allá de P2 (B negativo).</td></tr>}
           </tbody>
         </table>
       </Card>
