@@ -205,3 +205,11 @@ describe('Cálculos especiales', () => {
     expect(deltaX(-1, 45)).toBeNull();
   });
 });
+
+import { distanciaHorizontal } from '../engine/special';
+describe('Distancia ΔX entre puntos', () => {
+  it('horizontal en planta y desnivel', () => {
+    const r = distanciaHorizontal({ x: 0, y: 0, z: 100 }, { x: 3000, y: 4000, z: 350 });
+    expect(r.dx).toBeCloseTo(5000, 6); expect(r.dz).toBeCloseTo(250, 6);
+  });
+});
