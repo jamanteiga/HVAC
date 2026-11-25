@@ -4,7 +4,7 @@ import { CODOS_ESPECIALES, deltaX, recorrido } from '../engine/special';
 import { parseNum } from './DataGrid';
 
 // Colores de la hoja: verde = dato manual, amarillo = calculado.
-const C = { in: '#b9e6a5', calc: '#fff3a6', head: '#00b0f0' };
+const C = { in: '#b9e6a5', calc: '#fff3a6', mid: '#d9c4f0', head: '#00b0f0' };
 const cell: React.CSSProperties = { padding: '3px 8px', color: '#111', borderBottom: '1px solid rgba(0,0,0,.12)' };
 const fmt = (v: number, d = 2) => v.toLocaleString('es-ES', { minimumFractionDigits: d, maximumFractionDigits: d });
 const Row = ({ label, color, children, unit, bold }: any) => (<tr style={{ background: color, fontWeight: bold ? 700 : 400 }}><td style={cell}>{label}</td><td style={{ ...cell, textAlign: 'right', width: 140 }}>{children}</td><td style={{ ...cell, textAlign: 'center', width: 70 }}>{unit}</td></tr>);
@@ -23,7 +23,7 @@ export function Module7() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12, height: '100%', overflow: 'auto' }}>
       <Card><Title3>Cálculos especiales</Title3>
-        <Text size={200} style={{ color: 'var(--subtle)' }}>Verde: dato manual · amarillo: calculado. Decimales con punto o coma.</Text></Card>
+        <Text size={200} style={{ color: 'var(--subtle)' }}>Verde: dato manual · violeta: cálculo intermedio · amarillo: resultado. Decimales con punto o coma.</Text></Card>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, alignItems: 'flex-start' }}>
       <Card style={{ padding: 0, overflow: 'hidden', maxWidth: 460 }}>
         <table style={{ borderCollapse: 'collapse', width: '100%', fontSize: 13 }}>
@@ -44,13 +44,13 @@ export function Module7() {
             {['x1', 'y1', 'z1', 'x2', 'y2', 'z2'].map(k => <Row key={k} label={k[0].toUpperCase() + k[1] + (k[0] === 'z' ? ' (cota)' : '')} color={C.in} unit="mm"><input value={p[k] ?? ''} onChange={set(k)} inputMode="decimal" style={field} /></Row>)}
             <Row label="β" color={C.in} unit="°">{sel(a1, setA1)}</Row>
             <Row label="γ" color={C.in} unit="°">{sel(a2, setA2)}</Row>
-            <Row label="ΔX horizontal (de la vertical de P2 a P1)" color={C.calc} unit="mm" bold>{r ? fmt(r.dx) : ''}</Row>
-            <Row label="ΔZ (Z2 − Z1)" color={C.calc} unit="mm">{r ? fmt(r.dz) : ''}</Row>
-            <Row label="Proyección horizontal codo P1 (ΔZ/2)" color={C.calc} unit="mm">{r ? fmt(r.h1) : ''}</Row>
-            <Row label="Proyección horizontal codo P2 (ΔZ/2)" color={C.calc} unit="mm">{r ? fmt(r.h2) : ''}</Row>
-            <Row label="Longitud inclinada desde P1" color={C.calc} unit="mm">{r ? fmt(r.L1) : ''}</Row>
-            <Row label="Longitud inclinada desde P2" color={C.calc} unit="mm">{r ? fmt(r.L2) : ''}</Row>
-            <Row label="Distancia" color={r && r.recto < 0 ? '#f4a7a7' : C.calc} unit="mm" bold>{r ? fmt(r.recto) : ''}</Row>
+            <Row label="ΔX horizontal (de la vertical de P2 a P1)" color={C.mid} unit="mm" bold>{r ? fmt(r.dx) : ''}</Row>
+            <Row label="ΔZ (Z2 − Z1)" color={C.mid} unit="mm">{r ? fmt(r.dz) : ''}</Row>
+            <Row label="Proyección horizontal codo P1 (ΔZ/2)" color={C.mid} unit="mm">{r ? fmt(r.h1) : ''}</Row>
+            <Row label="Proyección horizontal codo P2 (ΔZ/2)" color={C.mid} unit="mm">{r ? fmt(r.h2) : ''}</Row>
+            <Row label="Longitud inclinada desde P1" color={C.mid} unit="mm">{r ? fmt(r.L1) : ''}</Row>
+            <Row label="Longitud inclinada desde P2" color={C.mid} unit="mm">{r ? fmt(r.L2) : ''}</Row>
+            <Row label="Distancia B" color={C.calc} unit="mm" bold>{r ? <span style={{ color: r.recto < 0 ? '#b00020' : undefined }}>{fmt(r.recto)}</span> : ''}</Row>
           </tbody>
         </table>
       </Card>
