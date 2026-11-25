@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Card, Text, Title3 } from '@fluentui/react-components';
 import { CODOS_ESPECIALES, deltaX, recorrido } from '../engine/special';
 import { parseNum } from './DataGrid';
-import { parseCoords } from '../engine/ocr';
+import { parseCoords, combinarLecturas } from '../engine/ocr';
 
 // Colores de la hoja: verde = dato manual, amarillo = calculado.
 const C = { in: '#b9e6a5', calc: '#fff3a6', mid: '#d9c4f0', head: '#00b0f0' };
@@ -23,11 +23,24 @@ export function Module7() {
       const { createWorker } = await import('tesseract.js');
       const base = new URL('./ocr/', window.location.href).href;
       const w = await createWorker('eng', 1, { workerPath: base + 'worker.min.js', corePath: base, langPath: base, gzip: true } as any);
-      await w.setParameters({ tessedit_char_whitelist: 'XYZPxyzp0123456789.,:=-+−() \n', tessedit_pageseg_mode: '6' as any });
-      const { data } = await w.recognize(f); await w.terminate();
-      const c = parseCoords(data.text); const n = Object.keys(c).length;
+      const bmp = await createImageBitmap(f), textos: string[] = [];
+      // varias pasadas (escala/desenfoque/modo de página): en capturas de pantalla cada una acierta valores distintos
+      const pasadas: [number, number, string][] = [[1.5, 1, '4'], [2.5, 1.5, '4'], [3, 2, '4'], [2, 1, '6'], [1.5, 1, '11'], [2.5, 1.5, '11'], [1, 0, '4']];
+      let res = combinarLecturas([]), i = 0;
+      for (const [esc, blur, psm] of pasadas) {
+        i++; setEstado(`Leyendo la imagen… pasada ${i} de ${pasadas.length}`);
+        const cv = document.createElement('canvas'); cv.width = Math.round(bmp.width * esc); cv.height = Math.round(bmp.height * esc);
+        const g = cv.getContext('2d')!; g.filter = `grayscale(1) contrast(1.5) blur(${blur}px)`; g.drawImage(bmp, 0, 0, cv.width, cv.height);
+        await w.setParameters({ tessedit_pageseg_mode: psm as any });
+        try { textos.push((await w.recognize(cv)).data.text); } catch { continue; }
+        res = combinarLecturas(textos); if (res.completo) break;
+      }
+      await w.terminate();
+      let c = res.coords, avisos = res.avisos;
+      if (Object.keys(c).length < 6) { const alt = textos.map(parseCoords).sort((x, y) => Object.keys(y).length - Object.keys(x).length)[0] ?? {}; if (Object.keys(alt).length > Object.keys(c).length) { c = alt; avisos = []; } }
+      const n = Object.keys(c).length;
       setP(o => ({ ...o, ...c })); setOcrKeys(Object.keys(c));
-      setEstado(n === 6 ? 'Coordenadas leídas: revisa los valores marcados en naranja.' : n > 0 ? `Solo se han leído ${n} de 6 valores: completa el resto a mano.` : 'No he encontrado coordenadas en la imagen. Texto leído: ' + data.text.replace(/\s+/g, ' ').slice(0, 120));
+      setEstado(n === 6 ? 'Coordenadas leídas (marcadas en naranja)' + (avisos.length ? ' · ATENCIÓN: ' + avisos.join('; ') : ': coinciden con DX/DY/DZ.') : n > 0 ? `Solo se han leído ${n} de 6 valores: completa el resto a mano.` : 'No he encontrado coordenadas en la imagen.');
     } catch (e: any) { setEstado('Error al leer la imagen: ' + (e?.message ?? e)); }
   };
   const leerRef = useRef(leer); leerRef.current = leer;

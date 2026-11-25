@@ -231,3 +231,15 @@ describe('Lectura de coordenadas (OCR)', () => {
   it('líneas P1 / P2', () => { expect(parseCoords('P1 1000.5 2000 350.25\nP2 4000 -1500.5 100')).toEqual(e); });
   it('seis números sin etiquetas', () => { expect(parseCoords('1000.5 2000 350.25 4000 -1500.5 100')).toEqual(e); });
 });
+
+import { combinarLecturas } from '../engine/ocr';
+describe('Lecturas OCR ruidosas (Foran)', () => {
+  const l1 = 'X: 57498.01 mm ~ | X: 58198.39 mm ~ DX: 700.3\nY: 3852.99 mm v | ¥ 33851 mm “DY: 470.\nZ: 30505.00 mm we g: 3060500 | mm v1 BT 100.0';
+  const l2 = 'Y: 3852.99 mm ye 3382.51 mm a DY: -9470.:\n. X: 57498.01 mm Ww X: 58198.39 mm DX: 700.3\nZ: 30505.00 mm Z: 30605.00 me DZ: 100.0';
+  const l3 = 'X: 574998.01 mn x: 381598.39 jm’ ~~ DX: 700.3\nY: 3852.99 mm |v fh 3382.51 mm DY: 470.\nZ: 30505.00 mm g: 8060300 © mm wl BSC 000';
+  const pool = '58198.39\n3382.51\n30605.00\n57498.01\n3852.99\n30505.00\n100.0';
+  it('vota y completa los seis valores', () => {
+    const r = combinarLecturas([l1, l2, l3, pool]);
+    expect(r.coords).toEqual({ x1: '57498.01', y1: '3852.99', z1: '30505', x2: '58198.39', y2: '3382.51', z2: '30605' });
+  });
+});
