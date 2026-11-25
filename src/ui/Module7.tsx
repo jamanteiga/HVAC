@@ -24,6 +24,7 @@ export function Module7() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12, height: '100%', overflow: 'auto' }}>
       <Card><Title3>Cálculos especiales</Title3>
         <Text size={200} style={{ color: 'var(--subtle)' }}>Verde: dato manual · amarillo: calculado. Decimales con punto o coma.</Text></Card>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, alignItems: 'flex-start' }}>
       <Card style={{ padding: 0, overflow: 'hidden', maxWidth: 460 }}>
         <table style={{ borderCollapse: 'collapse', width: '100%', fontSize: 13 }}>
           <thead><tr><th colSpan={3} style={{ background: C.head, color: '#111', padding: 6 }}>CODO PARA SALVAR DESNIVEL</th></tr></thead>
@@ -35,23 +36,25 @@ export function Module7() {
           </tbody>
         </table>
       </Card>
-      <Card style={{ padding: 0, overflow: 'hidden', maxWidth: 460 }}>
+      <Card style={{ padding: 0, overflow: 'hidden', width: 560, maxWidth: '100%' }}>
         <table style={{ borderCollapse: 'collapse', width: '100%', fontSize: 13 }}>
-          <thead><tr><th colSpan={3} style={{ background: C.head, color: '#111', padding: 6 }}>CÁLCULO DISTANCIA ΔX</th></tr></thead>
+          <thead><tr><th colSpan={3} style={{ background: C.head, color: '#111', padding: 6 }}>CÁLCULO DISTANCIA B</th></tr></thead>
           <tbody>
+            <tr><td colSpan={3} style={{ background: '#fff', padding: 8, textAlign: 'center' }}><img src="./img/calculo-distancia-b.png" alt="Esquema P1, P2, P3, A, B, β y γ" style={{ width: '100%', height: 'auto', display: 'block' }} /></td></tr>
             {['x1', 'y1', 'z1', 'x2', 'y2', 'z2'].map(k => <Row key={k} label={k[0].toUpperCase() + k[1] + (k[0] === 'z' ? ' (cota)' : '')} color={C.in} unit="mm"><input value={p[k] ?? ''} onChange={set(k)} inputMode="decimal" style={field} /></Row>)}
-            <Row label="Inclinación desde P1" color={C.in} unit="°">{sel(a1, setA1)}</Row>
-            <Row label="Inclinación desde P2" color={C.in} unit="°">{sel(a2, setA2)}</Row>
+            <Row label="β" color={C.in} unit="°">{sel(a1, setA1)}</Row>
+            <Row label="γ" color={C.in} unit="°">{sel(a2, setA2)}</Row>
             <Row label="ΔX horizontal (de la vertical de P2 a P1)" color={C.calc} unit="mm" bold>{r ? fmt(r.dx) : ''}</Row>
             <Row label="ΔZ (Z2 − Z1)" color={C.calc} unit="mm">{r ? fmt(r.dz) : ''}</Row>
             <Row label="Proyección horizontal codo P1 (ΔZ/2)" color={C.calc} unit="mm">{r ? fmt(r.h1) : ''}</Row>
             <Row label="Proyección horizontal codo P2 (ΔZ/2)" color={C.calc} unit="mm">{r ? fmt(r.h2) : ''}</Row>
             <Row label="Longitud inclinada desde P1" color={C.calc} unit="mm">{r ? fmt(r.L1) : ''}</Row>
             <Row label="Longitud inclinada desde P2" color={C.calc} unit="mm">{r ? fmt(r.L2) : ''}</Row>
-            <Row label="Tramo recto horizontal entre codos" color={r && r.recto < 0 ? '#f4a7a7' : C.calc} unit="mm" bold>{r ? fmt(r.recto) : ''}</Row>
+            <Row label="Distancia" color={r && r.recto < 0 ? '#f4a7a7' : C.calc} unit="mm" bold>{r ? fmt(r.recto) : ''}</Row>
           </tbody>
         </table>
       </Card>
+      </div>
     </div>
   );
 }
