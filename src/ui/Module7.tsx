@@ -36,11 +36,11 @@ export function Module7() {
         res = combinarLecturas(textos); if (res.completo) break;
       }
       await w.terminate();
-      let c = res.coords, avisos = res.avisos;
-      if (Object.keys(c).length < 6) { const alt = textos.map(parseCoords).sort((x, y) => Object.keys(y).length - Object.keys(x).length)[0] ?? {}; if (Object.keys(alt).length > Object.keys(c).length) { c = alt; avisos = []; } }
+      let c = res.coords, avisos = res.avisos, ver = res.verificados;
+      if (Object.keys(c).length < 6) { const alt = textos.map(parseCoords).sort((x, y) => Object.keys(y).length - Object.keys(x).length)[0] ?? {}; if (Object.keys(alt).length > Object.keys(c).length) { c = alt; avisos = []; ver = 0; } }
       const n = Object.keys(c).length;
       setP(o => ({ ...o, ...c })); setOcrKeys(Object.keys(c));
-      setEstado(n === 6 ? 'Coordenadas leídas (marcadas en naranja)' + (avisos.length ? ' · ATENCIÓN: ' + avisos.join('; ') : ': coinciden con DX/DY/DZ.') : n > 0 ? `Solo se han leído ${n} de 6 valores: completa el resto a mano.` : 'No he encontrado coordenadas en la imagen.');
+      setEstado(n === 6 ? 'Coordenadas leídas (marcadas en naranja)' + (avisos.length ? ' · ATENCIÓN: ' + avisos.join('; ') : (ver >= 2 ? ': coinciden con DX/DY/DZ.' : ': revísalas.')) : n > 0 ? `Solo se han leído ${n} de 6 valores: completa el resto a mano.` : 'No he encontrado coordenadas en la imagen.');
     } catch (e: any) { setEstado('Error al leer la imagen: ' + (e?.message ?? e)); }
   };
   const leerRef = useRef(leer); leerRef.current = leer;

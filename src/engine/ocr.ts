@@ -41,7 +41,7 @@ function filas(texto: string): Fila[] {
   const usados = new Set(res.filter(r => r.eje).map(r => r.eje)), libres = (['X', 'Y', 'Z'] as const).filter(e => !usados.has(e));
   return res.map(r => ({ ...r, eje: r.eje ?? libres.shift() })).filter(r => r.eje) as Fila[];
 }
-export function combinarLecturas(textos: string[]): { coords: Coords; avisos: string[]; completo: boolean } {
+export function combinarLecturas(textos: string[]): { coords: Coords; avisos: string[]; completo: boolean; verificados: number } {
   const tokens = textos.map(t => new Set([...t.replace(/[−–—]/g, '-').matchAll(DEC)].map(m => norm(m[0]))));
   const cand: Record<string, Set<string>> = {}, delta: Record<string, string[]> = {};
   for (const t of textos) for (const f of filas(t)) {
@@ -64,5 +64,5 @@ export function combinarLecturas(textos: string[]): { coords: Coords; avisos: st
     else avisos.push(`${e}1/${e}2 no coinciden con D${e} (${ds[0]}): revísalos`);
   }
   const completo = Object.keys(coords).length === 6 && verificados >= 2 && avisos.length === 0;
-  return { coords, avisos, completo };
+  return { coords, avisos, completo, verificados };
 }
