@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Card, Text, Title3 } from '@fluentui/react-components';
-import { CODOS_ESPECIALES, deltaX, distanciaHorizontal } from '../engine/special';
+import { CODOS_ESPECIALES, deltaX, recorrido } from '../engine/special';
 import { parseNum } from './DataGrid';
 
 // Colores de la hoja: verde = dato manual, amarillo = calculado.
@@ -17,7 +17,9 @@ export function Module7() {
   const set = (k: string) => (e: any) => setP(o => ({ ...o, [k]: e.target.value }));
   const ks = ['x1', 'y1', 'z1', 'x2', 'y2', 'z2'], vals = ks.map(k => parseNum(p[k] ?? ''));
   const ok = vals.every(v => v != null);
-  const r = ok ? distanciaHorizontal({ x: vals[0]!, y: vals[1]!, z: vals[2]! }, { x: vals[3]!, y: vals[4]!, z: vals[5]! }) : null;
+  const [a1, setA1] = useState('45'), [a2, setA2] = useState('45');
+  const r = ok ? recorrido({ x: vals[0]!, y: vals[1]!, z: vals[2]! }, { x: vals[3]!, y: vals[4]!, z: vals[5]! }, +a1, +a2) : null;
+  const sel = (v: string, f: (x: string) => void) => <select value={v} onChange={e => f(e.target.value)} style={field}>{CODOS_ESPECIALES.map(a => <option key={a} value={a} style={{ color: '#111' }}>{a}</option>)}</select>;
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12, height: '100%', overflow: 'auto' }}>
       <Card><Title3>Cálculos especiales</Title3>
@@ -38,8 +40,15 @@ export function Module7() {
           <thead><tr><th colSpan={3} style={{ background: C.head, color: '#111', padding: 6 }}>CÁLCULO DISTANCIA ΔX</th></tr></thead>
           <tbody>
             {['x1', 'y1', 'z1', 'x2', 'y2', 'z2'].map(k => <Row key={k} label={k[0].toUpperCase() + k[1] + (k[0] === 'z' ? ' (cota)' : '')} color={C.in} unit="mm"><input value={p[k] ?? ''} onChange={set(k)} inputMode="decimal" style={field} /></Row>)}
+            <Row label="Inclinación desde P1" color={C.in} unit="°">{sel(a1, setA1)}</Row>
+            <Row label="Inclinación desde P2" color={C.in} unit="°">{sel(a2, setA2)}</Row>
             <Row label="ΔX horizontal (de la vertical de P2 a P1)" color={C.calc} unit="mm" bold>{r ? fmt(r.dx) : ''}</Row>
             <Row label="ΔZ (Z2 − Z1)" color={C.calc} unit="mm">{r ? fmt(r.dz) : ''}</Row>
+            <Row label="Proyección horizontal codo P1 (ΔZ/2)" color={C.calc} unit="mm">{r ? fmt(r.h1) : ''}</Row>
+            <Row label="Proyección horizontal codo P2 (ΔZ/2)" color={C.calc} unit="mm">{r ? fmt(r.h2) : ''}</Row>
+            <Row label="Longitud inclinada desde P1" color={C.calc} unit="mm">{r ? fmt(r.L1) : ''}</Row>
+            <Row label="Longitud inclinada desde P2" color={C.calc} unit="mm">{r ? fmt(r.L2) : ''}</Row>
+            <Row label="Tramo recto horizontal entre codos" color={r && r.recto < 0 ? '#f4a7a7' : C.calc} unit="mm" bold>{r ? fmt(r.recto) : ''}</Row>
           </tbody>
         </table>
       </Card>

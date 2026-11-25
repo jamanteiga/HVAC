@@ -213,3 +213,12 @@ describe('Distancia ΔX entre puntos', () => {
     expect(r.dx).toBeCloseTo(5000, 6); expect(r.dz).toBeCloseTo(250, 6);
   });
 });
+
+import { recorrido } from '../engine/special';
+describe('Recorrido con dos codos', () => {
+  it('45°/45°, ΔZ 250 y 5000 en planta', () => {
+    const r = recorrido({ x: 0, y: 0, z: 100 }, { x: 3000, y: 4000, z: 350 }, 45, 45);
+    expect(r.dx).toBeCloseTo(5000, 6); expect(r.h1).toBeCloseTo(125, 6); expect(r.L1).toBeCloseTo(125 / Math.sin(Math.PI / 4), 6);
+    expect(r.recto).toBeCloseTo(4750, 6);
+  });
+});
