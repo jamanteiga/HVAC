@@ -222,3 +222,12 @@ describe('Recorrido con dos codos', () => {
     expect(r.recto).toBeCloseTo(4750, 6);
   });
 });
+
+import { parseCoords } from '../engine/ocr';
+describe('Lectura de coordenadas (OCR)', () => {
+  const e = { x1: '1000.5', y1: '2000', z1: '350.25', x2: '4000', y2: '-1500.5', z2: '100' };
+  it('etiquetas X= Y= Z= en orden', () => { expect(parseCoords('Punto 1\nX= 1000.5 Y= 2000 Z= 350.25\nPunto 2\nX= 4000 Y= −1500.5 Z= 100')).toEqual(e); });
+  it('etiquetas con índice', () => { expect(parseCoords('X1: 1000.5\nY1: 2000\nZ1: 350.25\nX2: 4000\nY2: -1500.5\nZ2: 100')).toEqual(e); });
+  it('líneas P1 / P2', () => { expect(parseCoords('P1 1000.5 2000 350.25\nP2 4000 -1500.5 100')).toEqual(e); });
+  it('seis números sin etiquetas', () => { expect(parseCoords('1000.5 2000 350.25 4000 -1500.5 100')).toEqual(e); });
+});

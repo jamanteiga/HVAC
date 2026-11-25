@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Card, Text, Title3 } from '@fluentui/react-components';
 import { CODOS_ESPECIALES, deltaX, recorrido } from '../engine/special';
 import { parseNum } from './DataGrid';
+import { parseCoords } from '../engine/ocr';
 
 // Colores de la hoja: verde = dato manual, amarillo = calculado.
 const C = { in: '#b9e6a5', calc: '#fff3a6', mid: '#d9c4f0', head: '#00b0f0' };
@@ -14,7 +15,26 @@ export function Module7() {
   const [dz, setDz] = useState(''); const [codo, setCodo] = useState('');
   const dx = codo ? deltaX(parseNum(dz) ?? NaN, +codo) : null;
   const [p, setP] = useState<Record<string, string>>({});
-  const set = (k: string) => (e: any) => setP(o => ({ ...o, [k]: e.target.value }));
+  const set = (k: string) => (e: any) => { setOcrKeys(o => o.filter(x => x !== k)); setP(o => ({ ...o, [k]: e.target.value })); };
+  const [ocrKeys, setOcrKeys] = useState<string[]>([]); const [estado, setEstado] = useState(''); const [vista, setVista] = useState<string | null>(null);
+  const leer = async (f: File) => {
+    setVista(URL.createObjectURL(f)); setEstado('Leyendo la imagen… (la primera vez tarda unos segundos)');
+    try {
+      const { createWorker } = await import('tesseract.js');
+      const base = new URL('./ocr/', window.location.href).href;
+      const w = await createWorker('eng', 1, { workerPath: base + 'worker.min.js', corePath: base, langPath: base, gzip: true } as any);
+      await w.setParameters({ tessedit_char_whitelist: 'XYZPxyzp0123456789.,:=-+−() \n', tessedit_pageseg_mode: '6' as any });
+      const { data } = await w.recognize(f); await w.terminate();
+      const c = parseCoords(data.text); const n = Object.keys(c).length;
+      setP(o => ({ ...o, ...c })); setOcrKeys(Object.keys(c));
+      setEstado(n === 6 ? 'Coordenadas leídas: revisa los valores marcados en naranja.' : n > 0 ? `Solo se han leído ${n} de 6 valores: completa el resto a mano.` : 'No he encontrado coordenadas en la imagen. Texto leído: ' + data.text.replace(/\s+/g, ' ').slice(0, 120));
+    } catch (e: any) { setEstado('Error al leer la imagen: ' + (e?.message ?? e)); }
+  };
+  const leerRef = useRef(leer); leerRef.current = leer;
+  useEffect(() => {
+    const h = (e: ClipboardEvent) => { const f = [...(e.clipboardData?.files ?? [])].find(x => x.type.startsWith('image/')); if (f) { e.preventDefault(); leerRef.current(f); } };
+    window.addEventListener('paste', h); return () => window.removeEventListener('paste', h);
+  }, []);
   const ks = ['x1', 'y1', 'z1', 'x2', 'y2', 'z2'], vals = ks.map(k => parseNum(p[k] ?? ''));
   const ok = vals.every(v => v != null);
   const [a1, setA1] = useState('45'), [a2, setA2] = useState('45');
@@ -41,7 +61,14 @@ export function Module7() {
           <thead><tr><th colSpan={3} style={{ background: C.head, color: '#111', padding: 6 }}>CÁLCULO DISTANCIA B</th></tr></thead>
           <tbody>
             <tr><td colSpan={3} style={{ background: '#fff', padding: 8, textAlign: 'center' }}><img src="./img/calculo-distancia-b.png" alt="Esquema P1, P2, P3, A, B, β y γ" style={{ width: '100%', height: 'auto', display: 'block' }} /></td></tr>
-            {['x1', 'y1', 'z1', 'x2', 'y2', 'z2'].map(k => <Row key={k} label={k[0].toUpperCase() + k[1] + (k[0] === 'z' ? ' (cota)' : '')} color={C.in} unit="mm"><input value={p[k] ?? ''} onChange={set(k)} inputMode="decimal" style={field} /></Row>)}
+            <tr><td colSpan={3} style={{ background: '#fff', padding: '4px 8px 8px' }}>
+              <div tabIndex={0} onDragOver={e => e.preventDefault()} onDrop={e => { e.preventDefault(); const f = [...e.dataTransfer.files].find(x => x.type.startsWith('image/')); if (f) leer(f); }}
+                style={{ border: '2px dashed #8a8a8a', borderRadius: 6, padding: 8, textAlign: 'center', color: '#333', fontSize: 12, background: '#fafafa' }}>
+                {vista ? <img src={vista} alt="Coordenadas pegadas" style={{ maxWidth: '100%', maxHeight: 160, display: 'block', margin: '0 auto 6px' }} /> : null}
+                Pega aquí (Ctrl+V) la imagen con las coordenadas de P1 y P2, o arrástrala · <label style={{ textDecoration: 'underline', cursor: 'pointer' }}>elegir archivo<input type="file" accept="image/*" style={{ display: 'none' }} onChange={e => { const f = e.target.files?.[0]; if (f) leer(f); e.target.value = ''; }} /></label>
+                {estado && <div style={{ marginTop: 4, color: '#111', fontWeight: 600 }}>{estado}</div>}
+              </div></td></tr>
+            {['x1', 'y1', 'z1', 'x2', 'y2', 'z2'].map(k => <Row key={k} label={k[0].toUpperCase() + k[1] + (k[0] === 'z' ? ' (cota)' : '')} color={C.in} unit="mm"><input value={p[k] ?? ''} onChange={set(k)} inputMode="decimal" style={ocrKeys.includes(k) ? { ...field, outline: '2px solid #ff8c00' } : field} /></Row>)}
             <Row label="β" color={C.in} unit="°">{sel(a1, setA1)}</Row>
             <Row label="γ" color={C.in} unit="°">{sel(a2, setA2)}</Row>
             <Row label="ΔX horizontal (de la vertical de P2 a P1)" color={C.mid} unit="mm" bold>{r ? fmt(r.dx) : ''}</Row>
