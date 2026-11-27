@@ -31,7 +31,7 @@ export function Vista3D({ d }: { d: V3D }) {
     const dX = Math.abs(d.x2 - d.x1), dY = Math.abs(d.y2 - d.y1), b = d.beta * Math.PI / 180;
     const sx = d.x2 >= d.x1 ? 1 : -1, sy = d.y2 >= d.y1 ? 1 : -1;
     const x3 = d.x1 + sx * dY / Math.tan(b), B = dX - dY / Math.tan(b);
-    const p1 = P(d.x1, d.y1, d.z1), p2 = P(d.x2, d.y2, d.z2), p3 = P(x3, d.y2, d.z2), p1b = P(d.x1, d.y1, d.z2);
+    const p1 = P(d.x1, d.y1, d.z1), p2 = P(d.x2, d.y2, d.z2), p3 = P(x3, d.y2, d.z2);
     const L = Math.max(dX, dY, Math.abs(d.z2 - d.z1), 300), u = L / 40;   // unidad de tamaño para marcas y textos
 
     const linea = (pts: THREE.Vector3[], color: number, dash = false) => {
@@ -50,28 +50,35 @@ export function Vista3D({ d }: { d: V3D }) {
     linea([p3, p2], B < 0 ? 0xd00000 : 0x2e9e2e);         // B
     linea([p1, P(d.x1 - sx * L * 0.35, d.y1, d.z1)], 0x777777);    // horizontal de referencia por P1
     linea([p2, P(d.x2, d.y2, d.z1)], 0x888888, true);     // desnivel ΔZ
-    linea([p1b, p1], 0x888888, true);
     // arco de β en el plano horizontal de P1
     const arc: THREE.Vector3[] = [], r = L * 0.12;
     for (let i = 0; i <= 24; i++) { const a = (b * i) / 24; arc.push(P(d.x1 - sx * r * Math.cos(a), d.y1 - sy * r * Math.sin(a), d.z1)); }
     linea(arc, 0xe08a00);
+    // proyecciones de P2 y P3 sobre el plano XY de P1 (a la cota Z1): muestran cuánto suben sobre el plano
+    const p2s = P(d.x2, d.y2, d.z1), p3s = P(x3, d.y2, d.z1);
+    linea([p1, p3s], 0x999999, true); linea([p3s, p2s], 0x999999, true); linea([p1, p2s], 0x999999, true);
+    linea([p3, p3s], 0x888888, true);
+    const pm = (p: THREE.Vector3) => { const m = new THREE.Mesh(new THREE.SphereGeometry(u * 0.45, 12, 8), new THREE.MeshBasicMaterial({ color: 0x999999 })); m.position.copy(p); scene.add(m); };
+    pm(p2s); pm(p3s);
+    txt("P2'", p2s.clone().add(new THREE.Vector3(0, 0, -u * 2.5)), '#777'); txt("P3'", p3s.clone().add(new THREE.Vector3(0, 0, -u * 2.5)), '#777');
     punto(p1, 0x000000); punto(p2, 0x000000); punto(p3, B < 0 ? 0xd00000 : 0xe08a00);
     txt('P1', p1.clone().add(new THREE.Vector3(0, 0, u * 2.5))); txt('P2', p2.clone().add(new THREE.Vector3(0, 0, u * 2.5))); txt('P3', p3.clone().add(new THREE.Vector3(0, 0, u * 2.5)));
     txt('A', p1.clone().add(p2).multiplyScalar(0.5).add(new THREE.Vector3(0, 0, u * 2.5)), '#1f6fd1');
     txt('B = ' + fmt(B), p3.clone().add(p2).multiplyScalar(0.5).add(new THREE.Vector3(0, 0, -u * 2.5)), B < 0 ? '#d00000' : '#2e9e2e');
     txt('β ' + d.beta + '°', P(d.x1 - sx * r * 1.6 * Math.cos(b / 2), d.y1 - sy * r * 1.6 * Math.sin(b / 2), d.z1), '#e08a00');
-    txt('ΔZ ' + fmt(d.z2 - d.z1), P(d.x2 + sx * u * 9, d.y2 + sy * u * 3, (d.z1 + d.z2) / 2), '#555');
+    txt('ΔZ ' + fmt(d.z2 - d.z1), P(d.x2 + sx * u * 12, d.y2, (d.z1 + d.z2) / 2), '#555');
 
     // ejes (X rojo, Y verde, Z azul) en la esquina inferior del modelo
     const o = P(Math.min(d.x1, d.x2, x3) - L * 0.1, Math.min(d.y1, d.y2) - L * 0.1, Math.min(d.z1, d.z2));
     [[1, 0, 0, 0xff0000, 'X'], [0, 1, 0, 0x00a000, 'Y'], [0, 0, 1, 0x0050ff, 'Z']].forEach(([x, y, z, c, n]: any) => {
       const e = o.clone().add(new THREE.Vector3(x, y, z).multiplyScalar(L * 0.2)); linea([o, e], c); txt(n, e.clone().add(new THREE.Vector3(x, y, z).multiplyScalar(u * 2)), '#' + c.toString(16).padStart(6, '0'));
     });
-    scene.add(new THREE.GridHelper(L * 1.6, 16, 0xcccccc, 0xe3e3e3).rotateX(Math.PI / 2));
+    const rej = new THREE.GridHelper(L * 1.6, 16, 0xbbbbbb, 0xe0e0e0); rej.rotateX(Math.PI / 2); rej.position.set(0, 0, p1.z); scene.add(rej);
+    const plano = new THREE.Mesh(new THREE.PlaneGeometry(L * 1.6, L * 1.6), new THREE.MeshBasicMaterial({ color: 0x9ec5ff, transparent: true, opacity: 0.10, side: THREE.DoubleSide, depthWrite: false })); plano.position.set(0, 0, p1.z); scene.add(plano);
 
     const R = L * 1.5;
     const vista = (v: 'planta' | 'alzado' | 'perfil' | 'iso') => {
-      const pos = { planta: [0, 0, 1], alzado: [0, -1, 0.25], perfil: [1, 0, 0.25], iso: [0.8, -1, 0.8] }[v];
+      const pos = { planta: [0, 0, 1], alzado: [0, -1, 0.25], perfil: [1, 0, 0.25], iso: [0.9, -1, 1.1] }[v];
       cam.up.set(...(v === 'planta' ? [0, 1, 0] : [0, 0, 1]) as [number, number, number]); cam.position.set(pos[0] * R, pos[1] * R, pos[2] * R); ctl.target.set(0, 0, 0); ctl.update();
     };
     api.current = { vista }; vista('iso');
