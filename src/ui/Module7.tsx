@@ -52,6 +52,7 @@ export function Module7() {
   const ks = ['x1', 'y1', 'z1', 'x2', 'y2', 'z2'], vals = ks.map(k => parseNum(p[k] ?? ''));
   const ok = vals.every(v => v != null);
   const ejemplo = { x1: 57498.01, y1: 3852.99, z1: 30505, x2: 58198.39, y2: 3382.51, z2: 30605 };
+  const [v3d, setV3d] = useState(false);
   const [a1, setA1] = useState('45'), [a2, setA2] = useState('45');
   const r = ok ? trianguloB({ x: vals[0]!, y: vals[1]!, z: vals[2]! }, { x: vals[3]!, y: vals[4]!, z: vals[5]! }, +a1) : null;
   const sel = (v: string, f: (x: string) => void) => <select value={v} onChange={e => f(e.target.value)} style={field}>{CODOS_ESPECIALES.map(a => <option key={a} value={a} style={{ color: '#111' }}>{a}</option>)}</select>;
@@ -75,7 +76,12 @@ export function Module7() {
         <table style={{ borderCollapse: 'collapse', width: '100%', fontSize: 13 }}>
           <thead><tr><th colSpan={3} style={{ background: C.head, color: '#111', padding: 6 }}>CÁLCULO DISTANCIA B</th></tr></thead>
           <tbody>
-            <tr><td colSpan={3} style={{ background: '#fff', padding: 8, textAlign: 'center' }}><img src="./img/calculo-distancia-b.png" alt="Esquema P1, P2, P3, A, B, β y γ" style={{ width: '100%', height: 'auto', display: 'block' }} /></td></tr>
+            <tr><td colSpan={3} style={{ background: '#fff', padding: '4px 8px', color: '#111', fontSize: 13 }}>
+              <label style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}><input type="checkbox" checked={v3d} onChange={e => setV3d(e.target.checked)} /> Vista 3D interactiva (desactivado: esquema)</label>
+            </td></tr>
+            {v3d ? (<tr><td colSpan={3} style={{ background: '#fff', padding: 0 }}><Suspense fallback={<div style={{ padding: 16, color: '#111' }}>Cargando vista 3D…</div>}><Vista3D d={{ ...(ok ? { x1: vals[0]!, y1: vals[1]!, z1: vals[2]!, x2: vals[3]!, y2: vals[4]!, z2: vals[5]! } : ejemplo), beta: +a1 }} /></Suspense>
+              {!ok && <div style={{ fontSize: 11, color: '#555', padding: '2px 8px 6px' }}>Ejemplo con los datos de la foto de Foran; rellena X1…Z2 para usar los tuyos.</div>}
+            </td></tr>) : (<tr><td colSpan={3} style={{ background: '#fff', padding: 8, textAlign: 'center' }}><img src="./img/calculo-distancia-b.png" alt="Esquema P1, P2, P3, A, B, β y γ" style={{ width: '100%', height: 'auto', display: 'block' }} /></td></tr>)}
             <tr><td colSpan={3} style={{ background: '#fff', padding: '4px 8px 8px' }}>
               <div tabIndex={0} onDragOver={e => e.preventDefault()} onDrop={e => { e.preventDefault(); const f = [...e.dataTransfer.files].find(x => x.type.startsWith('image/')); if (f) leer(f); }}
                 style={{ border: '2px dashed #8a8a8a', borderRadius: 6, padding: 8, textAlign: 'center', color: '#333', fontSize: 12, background: '#fafafa' }}>
@@ -96,10 +102,6 @@ export function Module7() {
             {r && r.B < 0 && <tr><td colSpan={3} style={{ ...cell, color: '#b00020', fontSize: 12 }}>β demasiado pequeño: P3 queda más allá de P2 (B negativo).</td></tr>}
           </tbody>
         </table>
-      </Card>
-      <Card style={{ padding: 0, overflow: 'hidden', width: 640, maxWidth: '100%', background: '#fff' }}>
-        <div style={{ background: C.head, color: '#111', padding: 6, textAlign: 'center', fontWeight: 700, fontSize: 13 }}>VISTA 3D (ejemplo){ok ? '' : ' · con los datos de la foto de Foran; rellena X1…Z2 para usar los tuyos'}</div>
-        <Suspense fallback={<div style={{ padding: 16, color: '#111' }}>Cargando vista 3D…</div>}><Vista3D d={{ ...(ok ? { x1: vals[0]!, y1: vals[1]!, z1: vals[2]!, x2: vals[3]!, y2: vals[4]!, z2: vals[5]! } : ejemplo), beta: +a1 }} /></Suspense>
       </Card>
       </div>
     </div>
