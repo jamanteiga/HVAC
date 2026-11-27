@@ -16,6 +16,7 @@ function etiqueta(txt: string, color = '#111', esc = 1): THREE.Sprite {
 /** Vista 3D (ejemplo) del esquema P1–P3–P2. Ejes: X rojo, Y verde, Z azul (cota). */
 export function Vista3D({ d }: { d: V3D }) {
   const host = useRef<HTMLDivElement>(null);
+  const orient = useRef<{ dir: THREE.Vector3; up: THREE.Vector3 } | null>(null);
   const api = useRef<{ vista: (v: 'planta' | 'alzado' | 'perfil' | 'iso') => void } | null>(null);
 
   useEffect(() => {
@@ -67,7 +68,7 @@ export function Vista3D({ d }: { d: V3D }) {
     txt('A', p1.clone().add(p2).multiplyScalar(0.5).add(new THREE.Vector3(0, 0, u * 2.5)), '#1f6fd1');
     txt('B = ' + fmt(B), p3.clone().add(p2).multiplyScalar(0.5).add(new THREE.Vector3(0, 0, -u * 2.5)), B < 0 ? '#d00000' : '#2e9e2e');
     txt('β ' + d.beta + '°', P(d.x1 - sx * r * 1.6 * Math.cos(b / 2), d.y1 - sy * r * 1.6 * Math.sin(b / 2), d.z1), '#e08a00');
-    txt('ΔZ ' + fmt(d.z2 - d.z1) + ' (dibujo ×' + ZE + ')', P(d.x2 + sx * u * 12, d.y2, (d.z1 + zv(d.z2)) / 2), '#555');
+    txt('ΔZ ' + fmt(d.z2 - d.z1) + ' (×' + ZE + ')', P(d.x2 + sx * u * 12, d.y2, (d.z1 + zv(d.z2)) / 2), '#555');
 
     // ejes (X rojo, Y verde, Z azul) en la esquina inferior del modelo
     const o = P(Math.min(d.x1, d.x2, x3) - L * 0.1, Math.min(d.y1, d.y2) - L * 0.1, Math.min(d.z1, zv(d.z2)));
@@ -77,12 +78,21 @@ export function Vista3D({ d }: { d: V3D }) {
     const rej = new THREE.GridHelper(L * 1.6, 16, 0xbbbbbb, 0xe0e0e0); rej.rotateX(Math.PI / 2); rej.position.set(0, 0, p1.z); scene.add(rej);
     const plano = new THREE.Mesh(new THREE.PlaneGeometry(L * 1.6, L * 1.6), new THREE.MeshBasicMaterial({ color: 0x9ec5ff, transparent: true, opacity: 0.10, side: THREE.DoubleSide, depthWrite: false })); plano.position.set(0, 0, p1.z); scene.add(plano);
 
-    const R = L * 1.5;
+    // «Zoom todo»: encuadra todo el modelo (puntos, proyecciones, ejes) en la dirección de vista actual
+    const caja = new THREE.Box3(); [p1, p2, p3, p2s, p3s, o, ...[[1, 0, 0], [0, 1, 0], [0, 0, 1]].map(v => o.clone().add(new THREE.Vector3(...(v as [number, number, number])).multiplyScalar(L * 0.2)))].forEach(v => caja.expandByPoint(v));
+    caja.expandByPoint(P(d.x2 + sx * u * 21, d.y2, (d.z1 + zv(d.z2)) / 2)); caja.expandByPoint(P(Math.min(d.x1, d.x2, x3) - u * 12, d.y1, d.z1));   // etiquetas laterales (ΔZ, β)
+    const centro = caja.getCenter(new THREE.Vector3()), radio = caja.getBoundingSphere(new THREE.Sphere()).radius * 1.12;
+    const vfov = cam.fov * Math.PI / 180, hfov = 2 * Math.atan(Math.tan(vfov / 2) * (W / H));
+    const dist = radio / Math.sin(Math.min(vfov, hfov) / 2);
+    const ajustar = (dir: THREE.Vector3, up: THREE.Vector3) => { cam.up.copy(up); cam.position.copy(centro).add(dir.clone().normalize().multiplyScalar(dist)); ctl.target.copy(centro); ctl.update(); };
     const vista = (v: 'planta' | 'alzado' | 'perfil' | 'iso') => {
-      const pos = { planta: [0, 0, 1], alzado: [0, -1, 0.25], perfil: [1, 0, 0.25], iso: [0.9, -1, 1.1] }[v];
-      cam.up.set(...(v === 'planta' ? [0, 1, 0] : [0, 0, 1]) as [number, number, number]); cam.position.set(pos[0] * R, pos[1] * R, pos[2] * R); ctl.target.set(0, 0, 0); ctl.update();
+      const dir = { planta: [0, 0, 1], alzado: [0, -1, 0.25], perfil: [1, 0, 0.25], iso: [0.9, -1, 1.1] }[v];
+      ajustar(new THREE.Vector3(...(dir as [number, number, number])), new THREE.Vector3(...(v === 'planta' ? [0, 1, 0] : [0, 0, 1]) as [number, number, number]));
     };
-    api.current = { vista }; vista('iso');
+    api.current = { vista };
+    // al cambiar un dato se conserva la orientación que tenía el usuario y se vuelve a encuadrar todo
+    ctl.addEventListener('change', () => { orient.current = { dir: cam.position.clone().sub(ctl.target), up: cam.up.clone() }; });
+    if (orient.current) ajustar(orient.current.dir, orient.current.up); else vista('iso');
 
     let raf = 0; const loop = () => { raf = requestAnimationFrame(loop); ctl.update(); renderer.render(scene, cam); }; loop();
     return () => { cancelAnimationFrame(raf); ctl.dispose(); renderer.dispose(); el.innerHTML = ''; };
