@@ -16,6 +16,7 @@
     "@fluentui/react-components": "^9.75.2",
     "@fluentui/react-icons": "^2.0.346",
     "@tesseract.js-data/eng": "^1.0.0",
+    "@types/three": "^0.187.0",
     "ag-grid-community": "^36.3.0",
     "ag-grid-react": "^36.3.0",
     "docx": "^9.15.4",
@@ -27,6 +28,7 @@
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "tesseract.js": "^7.0.0",
+    "three": "^0.187.0",
     "zustand": "^5.1.0"
   },
   "devDependencies": {

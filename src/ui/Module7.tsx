@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { Card, Text, Title3 } from '@fluentui/react-components';
 import { CODOS_ESPECIALES, deltaX, trianguloB } from '../engine/special';
 import { parseNum } from './DataGrid';
 import { parseCoords, combinarLecturas } from '../engine/ocr';
+const Vista3D = lazy(() => import('./Vista3D').then(m => ({ default: m.Vista3D })));
 
 // Colores de la hoja: verde = dato manual, amarillo = calculado.
 const C = { in: '#b9e6a5', calc: '#fff3a6', mid: '#d9c4f0', head: '#00b0f0' };
@@ -50,6 +51,7 @@ export function Module7() {
   }, []);
   const ks = ['x1', 'y1', 'z1', 'x2', 'y2', 'z2'], vals = ks.map(k => parseNum(p[k] ?? ''));
   const ok = vals.every(v => v != null);
+  const ejemplo = { x1: 57498.01, y1: 3852.99, z1: 30505, x2: 58198.39, y2: 3382.51, z2: 30605 };
   const [a1, setA1] = useState('45'), [a2, setA2] = useState('45');
   const r = ok ? trianguloB({ x: vals[0]!, y: vals[1]!, z: vals[2]! }, { x: vals[3]!, y: vals[4]!, z: vals[5]! }, +a1) : null;
   const sel = (v: string, f: (x: string) => void) => <select value={v} onChange={e => f(e.target.value)} style={field}>{CODOS_ESPECIALES.map(a => <option key={a} value={a} style={{ color: '#111' }}>{a}</option>)}</select>;
@@ -94,6 +96,10 @@ export function Module7() {
             {r && r.B < 0 && <tr><td colSpan={3} style={{ ...cell, color: '#b00020', fontSize: 12 }}>β demasiado pequeño: P3 queda más allá de P2 (B negativo).</td></tr>}
           </tbody>
         </table>
+      </Card>
+      <Card style={{ padding: 0, overflow: 'hidden', width: 640, maxWidth: '100%', background: '#fff' }}>
+        <div style={{ background: C.head, color: '#111', padding: 6, textAlign: 'center', fontWeight: 700, fontSize: 13 }}>VISTA 3D (ejemplo){ok ? '' : ' · con los datos de la foto de Foran; rellena X1…Z2 para usar los tuyos'}</div>
+        <Suspense fallback={<div style={{ padding: 16, color: '#111' }}>Cargando vista 3D…</div>}><Vista3D d={{ ...(ok ? { x1: vals[0]!, y1: vals[1]!, z1: vals[2]!, x2: vals[3]!, y2: vals[4]!, z2: vals[5]! } : ejemplo), beta: +a1 }} /></Suspense>
       </Card>
       </div>
     </div>
