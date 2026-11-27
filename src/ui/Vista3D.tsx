@@ -26,13 +26,14 @@ export function Vista3D({ d }: { d: V3D }) {
     const ctl = new OrbitControls(cam, renderer.domElement); ctl.enableDamping = true;
 
     // coordenadas centradas en el punto medio (evita perder precisión con cifras grandes)
-    const cx = (d.x1 + d.x2) / 2, cy = (d.y1 + d.y2) / 2, cz = (d.z1 + d.z2) / 2;
+    const cx = (d.x1 + d.x2) / 2, cy = (d.y1 + d.y2) / 2, cz = (d.z1 + d.z1 + 2 * (d.z2 - d.z1)) / 2;
     const P = (x: number, y: number, z: number) => new THREE.Vector3(x - cx, y - cy, z - cz);
+    const ZE = 2, zv = (z: number) => d.z1 + ZE * (z - d.z1);   // el desnivel se dibuja ×2 (solo visual)
     const dX = Math.abs(d.x2 - d.x1), dY = Math.abs(d.y2 - d.y1), b = d.beta * Math.PI / 180;
     const sx = d.x2 >= d.x1 ? 1 : -1, sy = d.y2 >= d.y1 ? 1 : -1;
     const x3 = d.x1 + sx * dY / Math.tan(b), B = dX - dY / Math.tan(b);
-    const p1 = P(d.x1, d.y1, d.z1), p2 = P(d.x2, d.y2, d.z2), p3 = P(x3, d.y2, d.z2);
-    const L = Math.max(dX, dY, Math.abs(d.z2 - d.z1), 300), u = L / 40;   // unidad de tamaño para marcas y textos
+    const p1 = P(d.x1, d.y1, d.z1), p2 = P(d.x2, d.y2, zv(d.z2)), p3 = P(x3, d.y2, zv(d.z2));
+    const L = Math.max(dX, dY, ZE * Math.abs(d.z2 - d.z1), 300), u = L / 40;   // unidad de tamaño para marcas y textos
 
     const linea = (pts: THREE.Vector3[], color: number, dash = false) => {
       const g = new THREE.BufferGeometry().setFromPoints(pts);
@@ -66,10 +67,10 @@ export function Vista3D({ d }: { d: V3D }) {
     txt('A', p1.clone().add(p2).multiplyScalar(0.5).add(new THREE.Vector3(0, 0, u * 2.5)), '#1f6fd1');
     txt('B = ' + fmt(B), p3.clone().add(p2).multiplyScalar(0.5).add(new THREE.Vector3(0, 0, -u * 2.5)), B < 0 ? '#d00000' : '#2e9e2e');
     txt('β ' + d.beta + '°', P(d.x1 - sx * r * 1.6 * Math.cos(b / 2), d.y1 - sy * r * 1.6 * Math.sin(b / 2), d.z1), '#e08a00');
-    txt('ΔZ ' + fmt(d.z2 - d.z1), P(d.x2 + sx * u * 12, d.y2, (d.z1 + d.z2) / 2), '#555');
+    txt('ΔZ ' + fmt(d.z2 - d.z1) + ' (dibujo ×' + ZE + ')', P(d.x2 + sx * u * 12, d.y2, (d.z1 + zv(d.z2)) / 2), '#555');
 
     // ejes (X rojo, Y verde, Z azul) en la esquina inferior del modelo
-    const o = P(Math.min(d.x1, d.x2, x3) - L * 0.1, Math.min(d.y1, d.y2) - L * 0.1, Math.min(d.z1, d.z2));
+    const o = P(Math.min(d.x1, d.x2, x3) - L * 0.1, Math.min(d.y1, d.y2) - L * 0.1, Math.min(d.z1, zv(d.z2)));
     [[1, 0, 0, 0xff0000, 'X'], [0, 1, 0, 0x00a000, 'Y'], [0, 0, 1, 0x0050ff, 'Z']].forEach(([x, y, z, c, n]: any) => {
       const e = o.clone().add(new THREE.Vector3(x, y, z).multiplyScalar(L * 0.2)); linea([o, e], c); txt(n, e.clone().add(new THREE.Vector3(x, y, z).multiplyScalar(u * 2)), '#' + c.toString(16).padStart(6, '0'));
     });
